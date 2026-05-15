@@ -1,0 +1,74 @@
+name: CI - Core API
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'apps/core-api/**'
+      - '.github/workflows/ci-core-api.yml'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'apps/core-api/**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./apps/core-api
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: user
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: booking_system
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Lint with flake8
+        run: |
+          pip install flake8
+          flake8 src --count --select=E9,F63,F7,F82 --show-source --statistics
+          flake8 src --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+      - name: Run tests
+        env:
+          DATABASE_URL: postgresql://user:password@localhost:5432/booking_system
+          REDIS_URL: redis://localhost:6379
+        run: |
+          pytest -v --cov=src
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3

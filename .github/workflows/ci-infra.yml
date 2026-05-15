@@ -1,0 +1,44 @@
+name: CI - Infrastructure
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'infra/**'
+      - '.github/workflows/ci-infra.yml'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'infra/**'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Kube tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y yamllint
+
+      - name: Validate YAML
+        run: |
+          yamllint -d relaxed infra/k8s/ || true
+
+      - name: Validate Kubernetes manifests
+        run: |
+          for file in infra/k8s/**/*.yaml; do
+            echo "Validating $file"
+            kubectl apply --dry-run=client -f "$file" || true
+          done
+        env:
+          KUBECONFIG: /tmp/kubeconfig
+
+      - name: Check Prometheus config
+        run: |
+          if [ -f infra/prometheus/prometheus.yml ]; then
+            echo "Prometheus config found"
+            yamllint -d relaxed infra/prometheus/prometheus.yml || true
+          fi

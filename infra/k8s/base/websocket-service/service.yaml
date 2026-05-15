@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: websocket-service
+  labels:
+    app: websocket-service
+spec:
+  selector:
+    app: websocket-service
+  ports:
+    - name: ws
+      port: 80
+      targetPort: 3000
+      protocol: TCP
+  type: ClusterIP

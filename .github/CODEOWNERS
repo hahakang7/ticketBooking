@@ -1,0 +1,27 @@
+# 파일별 리뷰어 자동 지정 규칙
+
+# 인프라 영역 - 팀원 1 담당
+/infra/                           @member1
+/tests/k6/                        @member1
+/.github/workflows/ci-infra.yml   @member1
+/.github/workflows/load-test.yml  @member1
+
+# 백엔드 영역 - 팀원 2 담당
+/apps/core-api/                   @member2
+/docker-compose.api.yml           @member2
+/.github/workflows/ci-core-api.yml @member2
+
+# 게이트웨이/프론트엔드 영역 - 팀원 3 담당
+/apps/websocket-service/          @member3
+/apps/frontend/                   @member3
+/docker-compose.gateway.yml       @member3
+/.github/workflows/ci-websocket.yml @member3
+/.github/workflows/ci-frontend.yml  @member3
+
+# 공동 리뷰 (API 계약)
+/docs/api-specs/                  @member1 @member2 @member3
+
+# 공통 문서
+/README.md                        @member1 @member2 @member3
+/docker-compose.yml               @member1 @member2 @member3
+/.env.example                     @member1

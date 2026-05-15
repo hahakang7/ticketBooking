@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  # Core API 서비스 (FastAPI) - 팀원 2 소유
+  core-api:
+    build:
+      context: ./apps/core-api
+      dockerfile: Dockerfile
+    container_name: distribute-sys-core-api
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://user:password@postgres:5432/booking_system
+      REDIS_URL: redis://redis:6379
+      DEBUG: "true"
+      LOG_LEVEL: "info"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./apps/core-api/src:/app/src
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
+    networks:
+      - distribute-sys-network
+
+networks:
+  distribute-sys-network:
+    external: true

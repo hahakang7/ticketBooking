@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git *)",
+      "Bash(mkdir -p infra/k8s/base/core-api infra/k8s/base/websocket-service infra/k8s/base/frontend infra/k8s/base/shared)",
+      "Bash(mkdir -p apps/core-api/src/prediction apps/core-api/models apps/core-api/data/seeds)",
+      "Bash(cp -r ml/prediction/. apps/core-api/src/prediction/)",
+      "Bash(cp -r ml/models/. apps/core-api/models/)",
+      "Bash(cp -r data/seeds/. apps/core-api/data/seeds/)",
+      "Bash(rm -rf ml data)"
+    ]
+  }
+}

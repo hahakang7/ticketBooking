@@ -1,0 +1,24 @@
+{
+  "name": "ticket-system-frontend",
+  "version": "1.0.0",
+  "description": "실시간 예매 시스템 프론트엔드 (Dark Theme, 모바일 최적화)",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint src --ext .js,.jsx"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "socket.io-client": "^4.7.2",
+    "axios": "^1.6.2",
+    "tailwindcss": "^3.3.6"
+  },
+  "devDependencies": {
+    "vite": "^5.0.7",
+    "@vitejs/plugin-react": "^4.2.1",
+    "eslint": "^8.54.0"
+  }
+}

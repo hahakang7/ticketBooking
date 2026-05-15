@@ -1,0 +1,53 @@
+name: Load Test (k6)
+
+on:
+  workflow_dispatch:
+    inputs:
+      scenario:
+        description: 'Test scenario to run'
+        required: true
+        default: 'queue-load-test'
+        type: choice
+        options:
+          - queue-load-test
+          - reservation-stress-test
+          - websocket-load-test
+
+jobs:
+  load-test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: user
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: booking_system
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Run k6 load test
+        run: |
+          docker run --rm \
+            -v ${{ github.workspace }}/tests/k6:/scripts \
+            -e API_URL=http://localhost:8000 \
+            grafana/k6:latest run /scripts/${{ github.event.inputs.scenario }}.js

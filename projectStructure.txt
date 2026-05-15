@@ -1,0 +1,20 @@
+root/
+├── .github/                  # CI/CD 자동화 (GitHub Actions Workflow)
+│   └── workflows/
+├── apps/                     # 애플리케이션 소스 코드 집합
+│   ├── core-api/             # 일반 예매 및 비즈니스 로직 (FastAPI)
+│   │   ├── src/
+│   │   ├── Dockerfile
+│   │   └── requirements.txt
+│   └── websocket-service/    # 실시간 좌석 동기화 및 시각화 (Node.js)
+│       ├── src/
+│       ├── Dockerfile
+│       └── package.json
+├── infra/                    # 인프라 및 쿠버네티스 매니페스트 관리
+│   ├── k8s/                  # 쿠버네티스 리소스 정의
+│   │   ├── base/             # 공통 Deployment, Service, Ingress
+│   │   └── autoscaling/      # Karpenter NodePool, HPA 매니페스트
+│   ├── prometheus/           # Prometheus 및 Custom Metrics 설정 가이드
+│   └── redis/                # Redis Operator 설치 및 설정 파일
+└── tests/                    # 엔드투엔드 및 부하 테스트 코드
+    └── k6/                   # k6 부하 테스트 스크립트 시나리오
