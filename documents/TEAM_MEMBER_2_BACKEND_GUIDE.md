@@ -134,11 +134,24 @@ docs/api-specs/core-api.md          📖 API 명세 (너가 초안, 팀 리뷰)
 #### 할일 체크리스트:
 
 ```
+[ ] Docker 설정
+    └─ [ ] requirements.txt 확정
+         ⚠️ 현재 파일에 누락된 패키지 (반드시 추가):
+         ├─ alembic==1.13.0          # DB 마이그레이션 (필수)
+         ├─ python-jose[cryptography]==3.3.0  # JWT 토큰 (필수)
+         ├─ passlib[bcrypt]==1.7.4   # 비밀번호 해싱 (필수)
+         ├─ pydantic-settings==2.1.0 # 환경변수 관리 (필수)
+         ├─ httpx==0.25.2            # 테스트용 HTTP 클라이언트
+         ├─ pytest-asyncio==0.21.0   # 비동기 테스트
+         └─ coverage==7.3.2          # 커버리지 측정
+    └─ [ ] Dockerfile 작성
+    └─ [ ] docker-compose.api.yml 작성
+
 [ ] FastAPI 프로젝트 초기화
     └─ 위치: apps/core-api/src/
-       ├─ [ ] main.py 작성 (FastAPI 앱 생성)
        ├─ [ ] config.py 작성 (환경변수 로드)
        ├─ [ ] dependencies.py 작성 (DB 세션, Redis 클라이언트)
+       ├─ [ ] main.py 작성 (FastAPI 앱 생성)
        └─ [ ] 기본 라우터 통합
 
 [ ] 데이터베이스 설계
@@ -175,31 +188,18 @@ docs/api-specs/core-api.md          📖 API 명세 (너가 초안, 팀 리뷰)
        ├─ [ ] seat_schema.py
        └─ [ ] user_schema.py
 
-[ ] 초기 데이터 준비
-    └─ 위치: apps/core-api/data/seeds/
-       ├─ [ ] events.json 작성 (3~5개 이벤트)
-       ├─ [ ] venues.json 작성
-       ├─ [ ] sections.json 작성
-       └─ [ ] seed.py 스크립트 작성
-
 [ ] 기본 API 엔드포인트
     └─ 위치: apps/core-api/src/api/v1/
        ├─ [ ] /health (헬스체크)
        ├─ [ ] /events (이벤트 조회)
        └─ [ ] /events/{id}/seats (좌석 조회)
 
-[ ] Docker 설정
-    └─ [ ] Dockerfile 작성
-    └─ [ ] docker-compose.api.yml 작성
-    └─ [ ] requirements.txt 확정
-         ⚠️ 현재 파일에 누락된 패키지 (반드시 추가):
-         ├─ alembic==1.13.0          # DB 마이그레이션 (필수)
-         ├─ python-jose[cryptography]==3.3.0  # JWT 토큰 (필수)
-         ├─ passlib[bcrypt]==1.7.4   # 비밀번호 해싱 (필수)
-         ├─ pydantic-settings==2.1.0 # 환경변수 관리 (필수)
-         ├─ httpx==0.25.2            # 테스트용 HTTP 클라이언트
-         ├─ pytest-asyncio==0.21.0   # 비동기 테스트
-         └─ coverage==7.3.2          # 커버리지 측정
+[ ] 초기 데이터 준비
+    └─ 위치: apps/core-api/data/seeds/
+       ├─ [ ] events.json 작성 (3~5개 이벤트)
+       ├─ [ ] venues.json 작성
+       ├─ [ ] sections.json 작성
+       └─ [ ] seed.py 스크립트 작성
 
 [ ] K8s 배포 설정
     └─ 위치: infra/k8s/base/core-api/
@@ -231,6 +231,18 @@ docs/api-specs/core-api.md          📖 API 명세 (너가 초안, 팀 리뷰)
 #### 할일 체크리스트:
 
 ```
+[ ] Queue Redis 로직
+    └─ 위치: apps/core-api/src/redis/queue.py
+       ├─ [ ] Redis Sorted Set 구조 정의
+       ├─ [ ] ZADD (추가), ZRANK (순번), ZREM (제거) 구현
+       └─ [ ] TTL 관리 (1시간 후 자동 삭제)
+
+[ ] JWT 설정
+    └─ 위치: apps/core-api/src/auth/token.py
+       ├─ [ ] 토큰 인코딩/디코딩
+       ├─ [ ] 만료 시간 설정
+       └─ [ ] 비밀키 관리
+
 [ ] Queue Service 구현
     └─ 위치: apps/core-api/src/services/queue_service.py
        ├─ [ ] join_queue() - 사용자 대기열 추가
@@ -238,29 +250,17 @@ docs/api-specs/core-api.md          📖 API 명세 (너가 초안, 팀 리뷰)
        ├─ [ ] consume_token() - 대기 완료 후 토큰 발급
        └─ [ ] leave_queue() - 대기열 이탈
 
-[ ] Queue Redis 로직
-    └─ 위치: apps/core-api/src/redis/queue.py
-       ├─ [ ] Redis Sorted Set 구조 정의
-       ├─ [ ] ZADD (추가), ZRANK (순번), ZREM (제거) 구현
-       └─ [ ] TTL 관리 (1시간 후 자동 삭제)
-
-[ ] Queue API 엔드포인트
-    └─ 위치: apps/core-api/src/api/v1/queue.py
-       ├─ [ ] POST /api/queue/join - 대기열 진입
-       ├─ [ ] GET /api/queue/status - 대기 상태 조회
-       └─ [ ] SSE /api/queue/sse - 실시간 업데이트
-
 [ ] Token Service 구현
     └─ 위치: apps/core-api/src/services/token_service.py
        ├─ [ ] queue_token 생성 (대기 단계)
        ├─ [ ] access_token 생성 (대기 완료 후)
        └─ [ ] 토큰 검증 로직
 
-[ ] JWT 설정
-    └─ 위치: apps/core-api/src/auth/token.py
-       ├─ [ ] 토큰 인코딩/디코딩
-       ├─ [ ] 만료 시간 설정
-       └─ [ ] 비밀키 관리
+[ ] Queue API 엔드포인트
+    └─ 위치: apps/core-api/src/api/v1/queue.py
+       ├─ [ ] POST /api/queue/join - 대기열 진입
+       ├─ [ ] GET /api/queue/status - 대기 상태 조회
+       └─ [ ] SSE /api/queue/sse - 실시간 업데이트
 
 [ ] Rate Limiting
     └─ 위치: apps/core-api/src/middleware/rate_limiter.py
@@ -342,11 +342,6 @@ docs/api-specs/core-api.md          📖 API 명세 (너가 초안, 팀 리뷰)
        ├─ [ ] GET /api/reservations/{id} - 예약 상태 조회
        └─ [ ] DELETE /api/reservations/{id} - 예약 취소
 
-[ ] 예측 모델 API 엔드포인트
-    └─ 위치: apps/core-api/src/api/v1/prediction.py
-       ├─ [ ] POST /api/prediction/forecast - 트래픽 예측 (팀원 1이 구현)
-       └─ [ ] GET /api/prediction/resource-plan - 리소스 계획 (팀원 1이 구현)
-
 [ ] Payment Service 구현
     └─ 위치: apps/core-api/src/services/payment_service.py
        ├─ [ ] process_payment() - 결제 처리
@@ -357,6 +352,11 @@ docs/api-specs/core-api.md          📖 API 명세 (너가 초안, 팀 리뷰)
     └─ 위치: apps/core-api/src/api/v1/payments.py
        ├─ [ ] POST /api/reservations/{id}/payment - 결제 요청
        └─ [ ] GET /api/orders/{id} - 주문 조회
+
+[ ] 예측 모델 API 엔드포인트
+    └─ 위치: apps/core-api/src/api/v1/prediction.py
+       ├─ [ ] POST /api/prediction/forecast - 트래픽 예측 (팀원 1이 구현)
+       └─ [ ] GET /api/prediction/resource-plan - 리소스 계획 (팀원 1이 구현)
 
 [ ] 데이터베이스 트랜잭션 최적화
     └─ 위치: apps/core-api/src/services/
@@ -424,16 +424,16 @@ docs/api-specs/core-api.md          📖 API 명세 (너가 초안, 팀 리뷰)
     └─ [ ] Redis 연결 누수 확인
     └─ [ ] DB 커넥션 누수 확인
 
+[ ] 코드 리팩토링
+    └─ [ ] 불필요한 코드 제거
+    └─ [ ] 함수 길이 최적화 (너무 길면 분리)
+    └─ [ ] 상수화 (매직 넘버 제거)
+
 [ ] 최종 검증
     └─ [ ] 모든 API 엔드포인트 테스트
     └─ [ ] 에러 핸들링 검증
     └─ [ ] 로깅 검증
     └─ [ ] 보안 체크 (SQL Injection, XSS 등)
-
-[ ] 코드 리팩토링
-    └─ [ ] 불필요한 코드 제거
-    └─ [ ] 함수 길이 최적화 (너무 길면 분리)
-    └─ [ ] 상수화 (매직 넘버 제거)
 
 [ ] 발표 자료 준비
     └─ [ ] 핵심 기능 설명 (대기열, Redlock, 트랜잭션)
