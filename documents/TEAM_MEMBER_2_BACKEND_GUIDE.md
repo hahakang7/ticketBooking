@@ -128,6 +128,9 @@ docs/api-specs/core-api.md          📖 API 명세 (너가 초안, 팀 리뷰)
 
 **목표:** Core API 프로젝트 스캐폴딩 완성, DB 스키마 정의
 
+#### ⚡ 작업 의존성 순서 (반드시 이 순서로 진행):
+> requirements.txt → config.py/db.py → models/ → alembic 마이그레이션 → redis/ → main.py → API → seed
+
 #### 할일 체크리스트:
 
 ```
@@ -189,6 +192,14 @@ docs/api-specs/core-api.md          📖 API 명세 (너가 초안, 팀 리뷰)
     └─ [ ] Dockerfile 작성
     └─ [ ] docker-compose.api.yml 작성
     └─ [ ] requirements.txt 확정
+         ⚠️ 현재 파일에 누락된 패키지 (반드시 추가):
+         ├─ alembic==1.13.0          # DB 마이그레이션 (필수)
+         ├─ python-jose[cryptography]==3.3.0  # JWT 토큰 (필수)
+         ├─ passlib[bcrypt]==1.7.4   # 비밀번호 해싱 (필수)
+         ├─ pydantic-settings==2.1.0 # 환경변수 관리 (필수)
+         ├─ httpx==0.25.2            # 테스트용 HTTP 클라이언트
+         ├─ pytest-asyncio==0.21.0   # 비동기 테스트
+         └─ coverage==7.3.2          # 커버리지 측정
 
 [ ] K8s 배포 설정
     └─ 위치: infra/k8s/base/core-api/
@@ -253,9 +264,10 @@ docs/api-specs/core-api.md          📖 API 명세 (너가 초안, 팀 리뷰)
 
 [ ] Rate Limiting
     └─ 위치: apps/core-api/src/middleware/rate_limiter.py
-       ├─ [ ] Queue API: 1 req/sec per IP (전체 시스템 제어)
-       ├─ [ ] 다른 API: 10 req/sec per IP
-       └─ [ ] Redis 기반 구현
+       ├─ [ ] /api/queue/join: 1 req/sec per IP
+       ├─ [ ] /api/events/{id}/seats/reserve: 2 req/sec per user  ⚠️ 누락 주의
+       ├─ [ ] 그 외 API: 10 req/sec per IP
+       └─ [ ] Redis 슬라이딩 윈도우 카운터 기반 구현
 
 [ ] 로깅 설정
     └─ 위치: apps/core-api/src/middleware/logger.py
@@ -370,9 +382,11 @@ docs/api-specs/core-api.md          📖 API 명세 (너가 초안, 팀 리뷰)
 ```
 
 **협업 포인트:**
-- 팀원 1, 2: `apps/core-api/src/` 수정 스케줄 협의 (prediction/ 모듈)
-- 팀원 2, 3: Redis Pub/Sub 메시지 형식 확정
-- 팀원 1: k6 부하 테스트 handoff
+- 팀원 1과: `apps/core-api/src/prediction/` 모듈 임포트 방식 협의
+- 팀원 3과: Redis Pub/Sub 채널 및 메시지 형식 확정
+    - 채널: `seat_updates:{event_id}`
+    - 발행 데이터: `{"seat_id", "status", "held_by", "event_id"}`
+- 팀원 1에게: k6 reservation-stress-test 시나리오 handoff
 
 ---
 
@@ -428,8 +442,8 @@ docs/api-specs/core-api.md          📖 API 명세 (너가 초안, 팀 리뷰)
 ```
 
 **협업 포인트:**
-- 팀원 1, 2, 3: 부하 테스트 결과 공동 회의
-- 팀원 2, 3: 최종 성능 검증
+- 팀원 1, 3과: 부하 테스트 결과 공동 회의
+- 팀원 3과: 최종 성능 검증
 
 ---
 
@@ -561,9 +575,9 @@ CREATE TABLE payments (
 |------|---------|---------|
 | Week 1 | 팀원 1, 3 | 데이터 모델, API 응답 형식 |
 | Week 2 | 팀원 1, 3 | SSE 이벤트 형식, k6 시나리오 파라미터 |
-| Week 3 | 팀원 1, 2 | prediction/ 모듈 임포트 방식 |
-| Week 3 | 팀원 2, 3 | Redis Pub/Sub 메시지 형식 |
-| Week 4 | 팀원 1, 2, 3 | 부하 테스트 결과 분석 |
+| Week 3 | 팀원 1 | prediction/ 모듈 임포트 방식 (팀원 1이 구현, 나는 API 래핑) |
+| Week 3 | 팀원 3 | Redis Pub/Sub 채널 `seat_updates:{event_id}` 메시지 형식 확정 |
+| Week 4 | 팀원 1, 3 | 부하 테스트 결과 분석 |
 
 ---
 
@@ -575,8 +589,8 @@ alembic init alembic
 alembic revision --autogenerate -m "Initial schema"
 alembic upgrade head
 
-# 시드 데이터 로드
-python -m apps.core_api.src.database.seed
+# 시드 데이터 로드 (apps/core-api/ 디렉토리에서 실행)
+python -m src.database.seed
 
 # pytest 실행
 pytest -v --cov=src
