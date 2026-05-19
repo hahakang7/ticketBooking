@@ -1,0 +1,72 @@
+[
+  {
+    "event_id": "evt-20260515-001",
+    "name": "2026 K-POP Concert",
+    "description": "The biggest K-POP concert of the year",
+    "location": "Olympic Gymnastics Arena, Seoul",
+    "start_at": "2026-05-15T18:00:00Z",
+    "end_at": "2026-05-15T22:00:00Z",
+    "total_seats": 1000,
+    "price_per_section": {
+      "A": 150000,
+      "B": 100000,
+      "C": 50000
+    }
+  },
+  {
+    "event_id": "evt-20260620-001",
+    "name": "Rock Festival 2026",
+    "description": "International rock music festival",
+    "location": "Korea International Exhibition Center, Goyang",
+    "start_at": "2026-06-20T17:00:00Z",
+    "end_at": "2026-06-20T23:00:00Z",
+    "total_seats": 500,
+    "price_per_section": {
+      "A": 120000,
+      "B": 80000,
+      "C": 40000
+    }
+  },
+  {
+    "event_id": "evt-20260705-001",
+    "name": "Summer Music Festival",
+    "description": "Multi-artist summer concert",
+    "location": "Olympic Gymnastics Arena, Seoul",
+    "start_at": "2026-07-05T19:00:00Z",
+    "end_at": "2026-07-05T23:30:00Z",
+    "total_seats": 800,
+    "price_per_section": {
+      "A": 100000,
+      "B": 70000,
+      "C": 35000
+    }
+  },
+  {
+    "event_id": "evt-20260820-001",
+    "name": "Jazz Night",
+    "description": "International jazz performers",
+    "location": "Korea International Exhibition Center, Goyang",
+    "start_at": "2026-08-20T19:30:00Z",
+    "end_at": "2026-08-20T22:30:00Z",
+    "total_seats": 600,
+    "price_per_section": {
+      "A": 130000,
+      "B": 90000,
+      "C": 45000
+    }
+  },
+  {
+    "event_id": "evt-20260925-001",
+    "name": "Classical Symphony",
+    "description": "National orchestra concert",
+    "location": "Olympic Gymnastics Arena, Seoul",
+    "start_at": "2026-09-25T20:00:00Z",
+    "end_at": "2026-09-25T22:30:00Z",
+    "total_seats": 700,
+    "price_per_section": {
+      "A": 140000,
+      "B": 95000,
+      "C": 50000
+    }
+  }
+]

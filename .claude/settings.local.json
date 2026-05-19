@@ -7,7 +7,18 @@
       "Bash(cp -r ml/prediction/. apps/core-api/src/prediction/)",
       "Bash(cp -r ml/models/. apps/core-api/models/)",
       "Bash(cp -r data/seeds/. apps/core-api/data/seeds/)",
-      "Bash(rm -rf ml data)"
+      "Bash(rm -rf ml data)",
+      "Bash(cd /d)",
+      "Bash(dir /b distributeSys)",
+      "Bash(dir *)",
+      "PowerShell(Get-ChildItem -Path \"D:\\\\distributeSys\\\\apps\\\\core-api\" -Recurse | Where-Object { -not $_.PSIsContainer } | Select-Object FullName)",
+      "Bash(alembic init *)",
+      "PowerShell(Test-Path *)",
+      "PowerShell(docker --version)",
+      "PowerShell(docker network create *)",
+      "PowerShell(cd \"D:\\\\distributeSys\\\\apps\\\\core-api\"; python -m uvicorn src.main:app --reload --port 8000 2>&1 &)",
+      "PowerShell(curl *)",
+      "PowerShell(Invoke-WebRequest -Uri \"http://localhost:8000/health\" -UseBasicParsing | Select-Object -ExpandProperty Content)"
     ]
   }
 }
