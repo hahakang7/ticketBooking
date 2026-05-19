@@ -1,0 +1,14 @@
+[
+  {
+    "venue_id": "venue-001",
+    "name": "Olympic Gymnastics Arena",
+    "location": "Seoul, South Korea",
+    "capacity": 10000
+  },
+  {
+    "venue_id": "venue-002",
+    "name": "Korea International Exhibition Center",
+    "location": "Goyang, South Korea",
+    "capacity": 5000
+  }
+]
