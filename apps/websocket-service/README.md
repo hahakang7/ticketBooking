@@ -62,7 +62,7 @@ socket.on('seat_status_updated', (data) => {
 여러 WebSocket 서버 인스턴스가 있을 때, Core API가 Redis Pub/Sub으로 메시지를 발행하면 모든 클라이언트가 동시에 업데이트를 받습니다.
 
 ```
-Redis Channel: event:{event_id}:seat_updates
+Redis Channel: seat_updates:{event_id}
 → 모든 서버 인스턴스가 구독
 → 모든 클라이언트가 수신
 ```

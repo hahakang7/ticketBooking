@@ -18,7 +18,8 @@
       "PowerShell(docker network create *)",
       "PowerShell(cd \"D:\\\\distributeSys\\\\apps\\\\core-api\"; python -m uvicorn src.main:app --reload --port 8000 2>&1 &)",
       "PowerShell(curl *)",
-      "PowerShell(Invoke-WebRequest -Uri \"http://localhost:8000/health\" -UseBasicParsing | Select-Object -ExpandProperty Content)"
+      "PowerShell(Invoke-WebRequest -Uri \"http://localhost:8000/health\" -UseBasicParsing | Select-Object -ExpandProperty Content)",
+      "Bash(python -c \"from src.main import app; print\\('✅ FastAPI app import successful'\\)\")"
     ]
   }
 }
