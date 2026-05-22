@@ -356,55 +356,55 @@ docs/api-specs/core-api.md          📖 API 명세 (너가 초안, 팀 리뷰)
 #### 할일 체크리스트:
 
 ```
-[ ] Queue Redis 로직
+[x] Queue Redis 로직
     └─ 위치: apps/core-api/src/redis/queue.py
-       ├─ [ ] Redis Sorted Set 구조 정의
-       ├─ [ ] ZADD (추가), ZRANK (순번), ZREM (제거) 구현
-       └─ [ ] TTL 관리 (1시간 후 자동 삭제)
+       ├─ [x] Redis Sorted Set 구조 정의
+       ├─ [x] ZADD (추가), ZRANK (순번), ZREM (제거) 구현
+       └─ [x] TTL 관리 (1시간 후 자동 삭제)
 
-[ ] JWT 설정
+[x] JWT 설정
     └─ 위치: apps/core-api/src/auth/token.py
-       ├─ [ ] 토큰 인코딩/디코딩
-       ├─ [ ] 만료 시간 설정
-       └─ [ ] 비밀키 관리
+       ├─ [x] 토큰 인코딩/디코딩
+       ├─ [x] 만료 시간 설정
+       └─ [x] 비밀키 관리
 
-[ ] Queue Service 구현
+[x] Queue Service 구현
     └─ 위치: apps/core-api/src/services/queue_service.py
-       ├─ [ ] join_queue() - 사용자 대기열 추가
-       ├─ [ ] get_position() - 현재 순번 조회
-       ├─ [ ] consume_token() - 대기 완료 후 토큰 발급
-       └─ [ ] leave_queue() - 대기열 이탈
+       ├─ [x] join_queue() - 사용자 대기열 추가
+       ├─ [x] get_position() - 현재 순번 조회
+       ├─ [x] consume_token() - 대기 완료 후 토큰 발급
+       └─ [x] leave_queue() - 대기열 이탈
 
-[ ] Token Service 구현
+[x] Token Service 구현
     └─ 위치: apps/core-api/src/services/token_service.py
-       ├─ [ ] queue_token 생성 (대기 단계)
-       ├─ [ ] access_token 생성 (대기 완료 후)
-       └─ [ ] 토큰 검증 로직
+       ├─ [x] queue_token 생성 (대기 단계)
+       ├─ [x] access_token 생성 (대기 완료 후)
+       └─ [x] 토큰 검증 로직
 
-[ ] Queue API 엔드포인트
+[x] Queue API 엔드포인트
     └─ 위치: apps/core-api/src/api/v1/queue.py
-       ├─ [ ] POST /api/queue/join - 대기열 진입
-       ├─ [ ] GET /api/queue/status - 대기 상태 조회
-       └─ [ ] SSE /api/queue/sse - 실시간 업데이트
+       ├─ [x] POST /api/queue/join - 대기열 진입
+       ├─ [x] GET /api/queue/status - 대기 상태 조회
+       └─ [x] SSE /api/queue/sse - 실시간 업데이트
 
-[ ] Rate Limiting
+[x] Rate Limiting
     └─ 위치: apps/core-api/src/middleware/rate_limiter.py
-       ├─ [ ] /api/queue/join: 1 req/sec per IP
-       ├─ [ ] /api/events/{id}/seats/reserve: 2 req/sec per user  ⚠️ 누락 주의
-       ├─ [ ] 그 외 API: 10 req/sec per IP
-       └─ [ ] Redis 슬라이딩 윈도우 카운터 기반 구현
+       ├─ [x] /api/queue/join: 1 req/sec per IP
+       ├─ [ ] /api/events/{id}/seats/reserve: 2 req/sec per user  (Week 3에서 구현)
+       ├─ [x] 그 외 API: 10 req/sec per IP
+       └─ [x] Redis 슬라이딩 윈도우 카운터 기반 구현
 
-[ ] 로깅 설정
+[x] 로깅 설정
     └─ 위치: apps/core-api/src/middleware/logger.py
-       ├─ [ ] 요청/응답 로깅
-       ├─ [ ] 에러 로깅
-       └─ [ ] 성능 메트릭 로깅
+       ├─ [x] 요청/응답 로깅
+       ├─ [x] 에러 로깅
+       └─ [x] 성능 메트릭 로깅 (요청 크기, 응답 크기, 슬로우 요청 경고)
 
-[ ] 단위 테스트
+[x] 단위 테스트
     └─ 위치: tests/test_queue.py
-       ├─ [ ] Queue 진입/조회/이탈 테스트
-       ├─ [ ] Token 발급/검증 테스트
-       └─ [ ] SSE 연결 테스트
+       ├─ [x] Queue 진입/조회/이탈 테스트 (11개 테스트 PASS)
+       ├─ [x] Token 발급/검증 테스트
+       └─ [ ] SSE 연결 테스트 (docker 환경에서 검증 예정)
 
 [ ] 통합 테스트
     └─ [ ] docker-compose up + queue API 테스트
