@@ -4,8 +4,8 @@ import logging
 
 from src.config import get_settings
 from src.database.db import engine
-from src.api.v1 import health, events
-from src.middleware import ErrorHandlerMiddleware, LoggerMiddleware
+from src.api.v1 import health, events, queue
+from src.middleware import ErrorHandlerMiddleware, LoggerMiddleware, RateLimiterMiddleware
 from src.redis.client import redis_client
 
 # FastAPI 앱 생성
@@ -26,7 +26,8 @@ app.add_middleware(
   allow_headers=["*"],
 )
 
-# 커스텀 미들웨어
+# 커스텀 미들웨어 (등록 역순으로 실행)
+app.add_middleware(RateLimiterMiddleware)
 app.add_middleware(LoggerMiddleware)
 app.add_middleware(ErrorHandlerMiddleware)
 
@@ -72,3 +73,4 @@ async def shutdown_event():
 # 라우터 등록
 app.include_router(health.router)
 app.include_router(events.router)
+app.include_router(queue.router)
