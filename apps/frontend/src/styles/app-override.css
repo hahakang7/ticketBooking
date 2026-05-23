@@ -21,8 +21,8 @@
   align-items: center;
   justify-content: space-between;
   padding: 10px 20px;
-  border-bottom: 1px solid #ddd;
-  background: #fff;
+  border-bottom: 1px solid #1a2a38;
+  background: #2C3E50;
   flex-shrink: 0;
 }
 
@@ -32,20 +32,20 @@
   gap: 0;
   line-height: 1;
 }
-.logo-ticket { font-size: 20px; font-weight: 700; color: #222; }
-.logo-link   { font-size: 20px; font-weight: 900; color: #D0312D; }
-.logo-sub    { font-size: 13px; font-weight: 400; color: #555; margin-left: 6px; }
+.logo-ticket { font-size: 20px; font-weight: 700; color: #fff; }
+.logo-link   { font-size: 20px; font-weight: 900; color: #E74C3C; }
+.logo-sub    { font-size: 13px; font-weight: 400; color: #94a8b8; margin-left: 6px; }
 
 .app-timer {
   display: flex;
   align-items: center;
   gap: 8px;
   font-size: 12px;
-  color: #555;
+  color: #94a8b8;
 }
-.timer-label { color: #555; }
+.timer-label { color: #94a8b8; }
 .timer-value {
-  color: #D0312D;
+  color: #E74C3C;
   font-weight: 700;
   font-size: 17px;
   font-family: monospace;
@@ -56,11 +56,11 @@
 .help-circle {
   width: 20px; height: 20px;
   border-radius: 50%;
-  border: 1.5px solid #bbb;
+  border: 1.5px solid #546e85;
   background: none;
   cursor: pointer;
   font-size: 11px;
-  color: #888;
+  color: #94a8b8;
   display: flex;
   align-items: center;
   justify-content: center;

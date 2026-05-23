@@ -8,14 +8,6 @@ import PaymentPage from './pages/PaymentPage';
 import ConfirmationPage from './pages/ConfirmationPage';
 import storageService from './services/storage';
 
-const STEPS = [
-  '날짜/회차선택',
-  '등급/좌석선택',
-  '권종/할인/매수선택',
-  '배송선택/예매확인',
-  '결제',
-];
-
 function App() {
   // 'queue' | 'seat_selection' | 'payment' | 'confirmation'
   const [phase, setPhase] = useState('queue');
@@ -85,7 +77,7 @@ function App() {
       <header className="app-header">
         <div className="app-logo">
           <span className="logo-ticket">ticket</span>
-          <span className="logo-link">LINK</span>
+          <span className="logo-link">TEAM6</span>
           <span className="logo-sub">예매</span>
         </div>
         <div className="app-timer">
@@ -94,19 +86,6 @@ function App() {
           <button className="help-circle" aria-label="도움말">?</button>
         </div>
       </header>
-
-      <nav className="step-nav" aria-label="예매 단계">
-        {STEPS.map((step, i) => (
-          <div
-            key={i}
-            className={`step-item ${
-              i === 0 ? 'step-done' : i === 1 ? 'step-active' : 'step-upcoming'
-            }`}
-          >
-            {step}
-          </div>
-        ))}
-      </nav>
 
       <div className="game-info-bar">
         <div className="game-teams">

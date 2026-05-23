@@ -62,19 +62,13 @@ export default function SeatMap({ selectedGrade, onGradeClick }) {
       {/* 상단 툴바 */}
       <div className="map-toolbar">
         <button className="hint-btn">⊙ 원하는 좌석이 없다면? ›</button>
-        <div className="zoom-controls">
-          <button className="zoom-btn" title="전체보기">⛶</button>
-          <button className="zoom-btn" title="확대">+</button>
-          <button className="zoom-btn" title="축소">−</button>
-          <button className="zoom-btn" title="초기화">↺</button>
-        </div>
       </div>
 
       {/* 야구장 SVG */}
       <svg viewBox="0 0 620 540" className="stadium-svg">
         {/* 배경 */}
-        <rect width="620" height="540" fill="#1a1a2a" />
-        <ellipse cx={CX} cy={CY} rx="282" ry="263" fill="#232335" stroke="#3a3a50" strokeWidth="1" />
+        <rect width="620" height="540" fill="#F0F2F5" />
+        <ellipse cx={CX} cy={CY} rx="282" ry="263" fill="#E2E6EA" stroke="#C8CDD4" strokeWidth="1" />
 
         {/* 구역 섹션들 */}
         {MAP_SECTIONS.map(([id, gradeId, colorOverride, r1, r2, a1, a2], idx) => {
@@ -105,8 +99,8 @@ export default function SeatMap({ selectedGrade, onGradeClick }) {
                   textAnchor="middle"
                   dominantBaseline="middle"
                   fontSize={fontSize}
-                  fill="rgba(255,255,255,0.92)"
-                  fontWeight="600"
+                  fill="rgba(255,255,255,0.95)"
+                  fontWeight="700"
                   pointerEvents="none"
                   transform={`rotate(${midA + 90},${mx.toFixed(1)},${my.toFixed(1)})`}
                 >
@@ -133,12 +127,12 @@ export default function SeatMap({ selectedGrade, onGradeClick }) {
         <circle cx={CX} cy={CY + 28} r="8" fill="#C9996A" stroke="#B88855" strokeWidth="0.5" />
 
         {/* 3루/1루 레이블 */}
-        <text x={CX - 50} y={CY + 53} textAnchor="middle" fontSize="9"  fill="rgba(255,255,255,0.9)" fontWeight="700">3루</text>
-        <text x={CX - 50} y={CY + 65} textAnchor="middle" fontSize="7"  fill="rgba(255,255,255,0.55)">(AWAY)</text>
-        <text x={CX + 50} y={CY + 53} textAnchor="middle" fontSize="9"  fill="rgba(255,255,255,0.9)" fontWeight="700">1루</text>
-        <text x={CX + 50} y={CY + 65} textAnchor="middle" fontSize="7"  fill="rgba(255,255,255,0.55)">(HOME)</text>
-        <text x={CX - 26} y={CY + 83} textAnchor="middle" fontSize="6"  fill="rgba(200,180,140,0.65)">DUGOUT</text>
-        <text x={CX + 26} y={CY + 83} textAnchor="middle" fontSize="6"  fill="rgba(200,180,140,0.65)">DUGOUT</text>
+        <text x={CX - 50} y={CY + 53} textAnchor="middle" fontSize="9"  fill="#fff" fontWeight="800" stroke="#1a1a1a" strokeWidth="0.4" paintOrder="stroke">3루</text>
+        <text x={CX - 50} y={CY + 65} textAnchor="middle" fontSize="7"  fill="#fff" fontWeight="600" stroke="#1a1a1a" strokeWidth="0.3" paintOrder="stroke">(AWAY)</text>
+        <text x={CX + 50} y={CY + 53} textAnchor="middle" fontSize="9"  fill="#fff" fontWeight="800" stroke="#1a1a1a" strokeWidth="0.4" paintOrder="stroke">1루</text>
+        <text x={CX + 50} y={CY + 65} textAnchor="middle" fontSize="7"  fill="#fff" fontWeight="600" stroke="#1a1a1a" strokeWidth="0.3" paintOrder="stroke">(HOME)</text>
+        <text x={CX - 26} y={CY + 83} textAnchor="middle" fontSize="6"  fill="#fff" fontWeight="600" stroke="#1a1a1a" strokeWidth="0.3" paintOrder="stroke">DUGOUT</text>
+        <text x={CX + 26} y={CY + 83} textAnchor="middle" fontSize="6"  fill="#fff" fontWeight="600" stroke="#1a1a1a" strokeWidth="0.3" paintOrder="stroke">DUGOUT</text>
 
         {/* Eagles 로고 */}
         <text
@@ -152,7 +146,7 @@ export default function SeatMap({ selectedGrade, onGradeClick }) {
         >
           Eagles
         </text>
-        <text x={CX} y={CY + 22} textAnchor="middle" fontSize="6" fill="rgba(255,255,255,0.45)">
+        <text x={CX} y={CY + 22} textAnchor="middle" fontSize="6" fill="rgba(255,255,255,0.6)">
           Hanwha Life Eagles Park
         </text>
       </svg>
