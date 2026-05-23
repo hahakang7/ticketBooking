@@ -2,14 +2,21 @@ apiVersion: v1
 kind: Service
 metadata:
   name: websocket-service
+  namespace: default
   labels:
     app: websocket-service
+    tier: realtime
 spec:
+  type: ClusterIP
   selector:
     app: websocket-service
   ports:
-    - name: ws
-      port: 80
-      targetPort: 3000
-      protocol: TCP
-  type: ClusterIP
+  - name: http
+    port: 3000
+    targetPort: 3000
+    protocol: TCP
+  # WebSocket sticky session 설정
+  sessionAffinity: ClientIP
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: 3600

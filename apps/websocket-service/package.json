@@ -2,6 +2,7 @@
   "name": "websocket-service",
   "version": "1.0.0",
   "description": "실시간 좌석 동기화 및 시각화 서비스",
+  "type": "module",
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",

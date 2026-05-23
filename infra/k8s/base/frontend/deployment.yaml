@@ -2,8 +2,10 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: frontend
+  namespace: default
   labels:
     app: frontend
+    tier: presentation
 spec:
   replicas: 2
   selector:
@@ -13,31 +15,44 @@ spec:
     metadata:
       labels:
         app: frontend
+        tier: presentation
     spec:
       containers:
-        - name: frontend
-          image: frontend:latest
-          ports:
-            - containerPort: 3001
-          envFrom:
-            - configMapRef:
-                name: app-config
-          resources:
-            requests:
-              cpu: "100m"
-              memory: "128Mi"
-            limits:
-              cpu: "250m"
-              memory: "256Mi"
-          livenessProbe:
-            httpGet:
-              path: /
-              port: 3001
-            initialDelaySeconds: 10
-            periodSeconds: 15
-          readinessProbe:
-            httpGet:
-              path: /
-              port: 3001
-            initialDelaySeconds: 5
-            periodSeconds: 10
+      - name: frontend
+        image: myregistry/frontend:v1
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 3001
+          name: http
+          protocol: TCP
+        env:
+        - name: VITE_API_BASE_URL
+          value: "https://api.example.com"
+        - name: VITE_SOCKET_URL
+          value: "https://ws.example.com"
+        
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 256Mi
+        
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 3001
+          initialDelaySeconds: 15
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 3001
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 2

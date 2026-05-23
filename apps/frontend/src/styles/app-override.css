@@ -1,0 +1,146 @@
+/* ──────────────────────────────────────────────
+   app-override.css
+   App.jsx 전용 스타일 (theme.css 보완용)
+   src/styles/app-override.css 에 위치
+────────────────────────────────────────────── */
+
+/* ---- 앱 전체 컨테이너 ---- */
+.app-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: #fff;
+  font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif;
+  font-size: 13px;
+  color: #333;
+}
+
+/* ---- 헤더 ---- */
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px;
+  border-bottom: 1px solid #ddd;
+  background: #fff;
+  flex-shrink: 0;
+}
+
+.app-logo {
+  display: flex;
+  align-items: baseline;
+  gap: 0;
+  line-height: 1;
+}
+.logo-ticket { font-size: 20px; font-weight: 700; color: #222; }
+.logo-link   { font-size: 20px; font-weight: 900; color: #D0312D; }
+.logo-sub    { font-size: 13px; font-weight: 400; color: #555; margin-left: 6px; }
+
+.app-timer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #555;
+}
+.timer-label { color: #555; }
+.timer-value {
+  color: #D0312D;
+  font-weight: 700;
+  font-size: 17px;
+  font-family: monospace;
+  letter-spacing: 1px;
+  min-width: 44px;
+  text-align: center;
+}
+.help-circle {
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  border: 1.5px solid #bbb;
+  background: none;
+  cursor: pointer;
+  font-size: 11px;
+  color: #888;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  line-height: 1;
+}
+
+/* ---- 단계 네비게이션 ---- */
+.step-nav {
+  display: flex;
+  flex-shrink: 0;
+  background: #484848;
+}
+.step-item {
+  flex: 1;
+  padding: 9px 4px;
+  text-align: center;
+  font-size: 11px;
+  color: #888;
+  position: relative;
+  cursor: default;
+  user-select: none;
+}
+.step-item::after {
+  content: '';
+  position: absolute;
+  right: -9px; top: 0; bottom: 0;
+  width: 18px;
+  background: inherit;
+  clip-path: polygon(0 0, 0 100%, 100% 50%);
+  z-index: 2;
+}
+.step-item:last-child::after { display: none; }
+
+.step-done     { background: #575757; color: #bbb; }
+.step-active   { background: #C0392B; color: #fff; font-weight: 700; }
+.step-upcoming { background: #484848; color: #777; }
+
+/* ---- 경기 정보 바 ---- */
+.game-info-bar {
+  padding: 8px 20px;
+  border-bottom: 1px solid #e0e0e0;
+  background: #fff;
+  flex-shrink: 0;
+}
+.game-teams {
+  font-size: 15px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.vs-sep { font-size: 12px; color: #999; font-weight: 400; }
+.game-meta { font-size: 11px; color: #888; margin-top: 3px; }
+
+/* ---- 메인 영역 ---- */
+.app-main {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---- 하단 안내 바 ---- */
+.status-bar-bottom {
+  background: #555;
+  color: #fff;
+  padding: 7px 16px;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.status-icon { color: #ffdd57; }
+
+/* ---- 반응형 ---- */
+@media (max-width: 600px) {
+  .step-item { font-size: 9px; padding: 7px 2px; }
+  .app-header { padding: 8px 12px; }
+  .game-info-bar { padding: 7px 12px; }
+}

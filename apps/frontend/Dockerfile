@@ -1,16 +1,17 @@
+# Frontend Dockerfile
 FROM node:18-alpine AS builder
 
 WORKDIR /app
 
+# 의존성 설치
 COPY package*.json ./
 RUN npm ci
 
-COPY src/ ./src/
-COPY public/ ./public/
-COPY vite.config.js ./
-
+# 빌드
+COPY . .
 RUN npm run build
 
+# Production 이미지
 FROM node:18-alpine
 
 WORKDIR /app

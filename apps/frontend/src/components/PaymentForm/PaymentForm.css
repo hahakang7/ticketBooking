@@ -1,0 +1,148 @@
+.payment-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.payment-form__title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--gray-700, #374151);
+  margin-bottom: 0.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--gray-200, #E5E7EB);
+}
+
+/* 필드 그룹 */
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.form-field__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.form-field label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--gray-600, #4B5563);
+  letter-spacing: 0.02em;
+}
+
+.form-field input {
+  width: 100%;
+  padding: 0.7rem 0.9rem;
+  border: 1.5px solid var(--gray-200, #E5E7EB);
+  border-radius: 0.5rem;
+  font-size: 0.95rem;
+  color: var(--gray-900, #111827);
+  background: #fff;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
+}
+
+.form-field input:focus {
+  outline: none;
+  border-color: #3B82F6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.form-field input.error {
+  border-color: #EF4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.form-field input::placeholder {
+  color: var(--gray-400, #9CA3AF);
+}
+
+.form-field__error {
+  font-size: 0.75rem;
+  color: #EF4444;
+}
+
+/* 카드 번호 아이콘 */
+.card-number-wrapper {
+  position: relative;
+}
+
+.card-number-wrapper input {
+  padding-right: 3rem;
+  letter-spacing: 0.1em;
+  font-family: 'Courier New', monospace;
+}
+
+.card-icon {
+  position: absolute;
+  right: 0.8rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1.2rem;
+  pointer-events: none;
+}
+
+/* 에러 배너 */
+.payment-form__error-banner {
+  padding: 0.75rem 1rem;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 0.5rem;
+  color: #B91C1C;
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+/* 제출 버튼 */
+.payment-form__submit {
+  width: 100%;
+  padding: 0.9rem;
+  background: #3B82F6;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 700;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: background 0.2s, box-shadow 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.payment-form__submit:hover:not(:disabled) {
+  background: #2563EB;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+.payment-form__submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.payment-form__spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255,255,255,0.4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* PCI 안내 */
+.payment-form__security {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  color: var(--gray-500, #6B7280);
+}
