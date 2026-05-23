@@ -122,6 +122,23 @@ npm run lint
 | `connection_info` | 연결 시 | 연결 정보 및 서버 시간 |
 | `error` | 오류 발생 시 | 에러 정보 |
 
+### 주요 응답 형식
+
+```json
+// subscription_confirmed
+{ "event_id": "evt-123", "room": "event_evt-123", "clients_in_room": 42 }
+
+// connection_info
+{ "socket_id": "abc123", "server_time": "2026-05-23T10:00:00Z", "version": "1.0.0" }
+
+// seat_status_updated
+{
+  "event_id": "evt-123",
+  "timestamp": "2026-05-23T10:00:00Z",
+  "updates": [{ "seat_id": "A1", "status": "hold" }]
+}
+```
+
 자세한 이벤트 명세는 `docs/api-specs/websocket-api.md` 참고.
 
 ## 성능 최적화

@@ -1,0 +1,48 @@
+/* ──────────────────────────────────────────────
+   home-page.css
+   src/styles/pages/home-page.css
+────────────────────────────────────────────── */
+
+.home-page {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.stadium-container {
+  display: grid;
+  grid-template-columns: 1fr 255px;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+}
+
+.seat-map-section {
+  display: flex;
+  flex-direction: column;
+  background: #f0f0f0;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.section-panel-section {
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border-left: 1px solid #ddd;
+  overflow: hidden;
+  min-height: 0;
+}
+
+@media (max-width: 900px) {
+  .stadium-container {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+  }
+  .section-panel-section {
+    border-left: none;
+    border-top: 1px solid #ddd;
+    max-height: 45vh;
+  }
+}
