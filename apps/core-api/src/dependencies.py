@@ -1,9 +1,10 @@
-from fastapi import Depends
+from fastapi import Depends, Header, HTTPException, status
 from sqlalchemy.orm import Session
 
 from src.database.db import SessionLocal
 from src.redis.client import redis_client
 from src.config import Settings, get_settings
+from src.auth.token import decode_token
 
 
 def get_db() -> Session:
@@ -23,3 +24,29 @@ def get_redis():
 def get_config() -> Settings:
   """설정 의존성"""
   return get_settings()
+
+
+def get_current_user(authorization: str = Header(...)) -> dict:
+  """
+  Authorization: Bearer <access_token> 검증.
+  반환: {"sub": user_id, "event_id": event_id, "type": "access"}
+  """
+  if not authorization.startswith("Bearer "):
+    raise HTTPException(
+      status_code=status.HTTP_401_UNAUTHORIZED,
+      detail="Invalid authorization header format",
+    )
+  token = authorization.removeprefix("Bearer ")
+  try:
+    payload = decode_token(token)
+  except ValueError as e:
+    raise HTTPException(
+      status_code=status.HTTP_401_UNAUTHORIZED,
+      detail=str(e),
+    )
+  if payload.get("type") != "access":
+    raise HTTPException(
+      status_code=status.HTTP_401_UNAUTHORIZED,
+      detail="Access token required",
+    )
+  return payload

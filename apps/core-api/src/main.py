@@ -4,7 +4,7 @@ import logging
 
 from src.config import get_settings
 from src.database.db import engine
-from src.api.v1 import health, events, queue
+from src.api.v1 import health, events, queue, seats, reservations, payments
 from src.middleware import ErrorHandlerMiddleware, LoggerMiddleware, RateLimiterMiddleware
 from src.redis.client import redis_client
 
@@ -74,3 +74,6 @@ async def shutdown_event():
 app.include_router(health.router)
 app.include_router(events.router)
 app.include_router(queue.router)
+app.include_router(seats.router)
+app.include_router(reservations.router)
+app.include_router(payments.router)
