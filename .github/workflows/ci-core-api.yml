@@ -1,0 +1,74 @@
+name: CI - Core API
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'apps/core-api/**'
+      - '.github/workflows/ci-core-api.yml'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'apps/core-api/**'
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    name: Lint & Format Check
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: 'apps/core-api/requirements.txt'
+
+      - name: Install dependencies
+        working-directory: ./apps/core-api
+        run: pip install flake8
+
+      - name: Run flake8
+        working-directory: ./apps/core-api
+        run: flake8 src/ --max-line-length=100 --exclude=alembic/
+
+  test:
+    runs-on: ubuntu-latest
+    name: Unit Tests
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: 'apps/core-api/requirements.txt'
+
+      - name: Install dependencies
+        working-directory: ./apps/core-api
+        run: pip install -r requirements.txt
+
+      - name: Run tests
+        working-directory: ./apps/core-api
+        run: pytest tests/ -v --tb=short
+
+  build:
+    runs-on: ubuntu-latest
+    name: Build Docker Image
+    needs: [lint, test]
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./apps/core-api
+          push: false
+          tags: core-api:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
