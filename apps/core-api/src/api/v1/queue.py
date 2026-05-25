@@ -2,10 +2,10 @@ import asyncio
 import json
 from typing import AsyncGenerator
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import StreamingResponse
 
-from src.dependencies import get_redis
+from src.dependencies import get_redis, get_user_from_queue_token
 from src.schemas.common import ApiResponse
 from src.schemas.queue_schema import QueueJoinRequest, QueueJoinResponse, QueueStatusResponse
 from src.services.queue_service import QueueService
@@ -28,9 +28,15 @@ async def join_queue(body: QueueJoinRequest, service: QueueService = Depends(get
 async def get_queue_status(
   user_id: str = Query(...),
   event_id: str = Query(...),
+  token_user: dict = Depends(get_user_from_queue_token),
   service: QueueService = Depends(get_queue_service),
 ):
-  """대기열 현재 상태 조회"""
+  """대기열 현재 상태 조회 (queue_token 필수)"""
+  if token_user["sub"] != user_id:
+    raise HTTPException(
+      status_code=status.HTTP_403_FORBIDDEN,
+      detail="user_id mismatch with token",
+    )
   position = service.get_position(user_id, event_id)
   total = service.get_total(event_id)
   return ApiResponse(
@@ -42,14 +48,24 @@ async def get_queue_status(
 
 @router.get("/sse")
 async def queue_sse(
+  request: Request,
   user_id: str = Query(...),
   event_id: str = Query(...),
+  token_user: dict = Depends(get_user_from_queue_token),
   service: QueueService = Depends(get_queue_service),
 ):
   """SSE 스트림: 2초마다 현재 순번 전송. position=1 도달 시 access_token 발급 후 종료."""
+  if token_user["sub"] != user_id:
+    raise HTTPException(
+      status_code=status.HTTP_403_FORBIDDEN,
+      detail="user_id mismatch with token",
+    )
 
   async def event_stream() -> AsyncGenerator[str, None]:
     while True:
+      if await request.is_disconnected():
+        break
+
       position = service.get_position(user_id, event_id)
       total = service.get_total(event_id)
 

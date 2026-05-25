@@ -1,0 +1,130 @@
+name: Load Test
+
+on:
+  # 수동 실행 (테스트 종류와 강도 선택 가능)
+  workflow_dispatch:
+    inputs:
+      test_type:
+        description: '실행할 테스트'
+        required: true
+        default: 'queue'
+        type: choice
+        options:
+          - queue
+          - reservation
+          - websocket
+          - all
+      vus:
+        description: '가상 사용자 수 (Virtual Users)'
+        required: false
+        default: '50'
+      duration:
+        description: '테스트 시간 (예: 30s, 1m, 5m)'
+        required: false
+        default: '1m'
+
+  # develop 브랜치 push 시 가벼운 스모크 테스트 자동 실행
+  push:
+    branches: [develop]
+    paths:
+      - 'tests/k6/**'
+      - 'apps/core-api/**'
+
+jobs:
+  load-test:
+    runs-on: ubuntu-latest
+    name: Run k6 Load Test
+
+    steps:
+      - uses: actions/checkout@v3
+
+      # k6 설치
+      - name: Install k6
+        run: |
+          sudo gpg -k
+          sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg \
+            --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+          echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" \
+            | sudo tee /etc/apt/sources.list.d/k6.list
+          sudo apt-get update
+          sudo apt-get install k6
+
+      # Core API 서버 실행 (GitHub Actions 환경 내에서)
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Start services with Docker Compose
+        run: |
+          docker compose -f docker-compose.yml -f docker-compose.api.yml up -d postgres redis
+          sleep 10  # DB 초기화 대기
+          docker compose -f docker-compose.yml -f docker-compose.api.yml up -d core-api
+          sleep 5   # API 서버 기동 대기
+
+      - name: Wait for Core API health
+        run: |
+          for i in {1..20}; do
+            if curl -sf http://localhost:8000/health; then
+              echo "Core API is ready!"
+              break
+            fi
+            echo "Waiting... ($i/20)"
+            sleep 3
+          done
+
+      # 대기열 부하 테스트
+      - name: Run Queue Load Test
+        if: github.event.inputs.test_type == 'queue' || github.event.inputs.test_type == 'all' || github.event_name == 'push'
+        run: |
+          VUS="${{ github.event.inputs.vus || '10' }}"
+          DURATION="${{ github.event.inputs.duration || '30s' }}"
+          k6 run \
+            --vus "$VUS" \
+            --duration "$DURATION" \
+            --out json=results/queue-test-result.json \
+            tests/k6/queue-load-test.js || true
+        env:
+          BASE_URL: http://localhost:8000
+
+      # 예약 부하 테스트 (Week 3 이후)
+      - name: Run Reservation Stress Test
+        if: github.event.inputs.test_type == 'reservation' || github.event.inputs.test_type == 'all'
+        run: |
+          VUS="${{ github.event.inputs.vus || '50' }}"
+          DURATION="${{ github.event.inputs.duration || '1m' }}"
+          k6 run \
+            --vus "$VUS" \
+            --duration "$DURATION" \
+            --out json=results/reservation-test-result.json \
+            tests/k6/reservation-stress-test.js || true
+        env:
+          BASE_URL: http://localhost:8000
+
+      - name: Run WebSocket Load Test
+        if: github.event.inputs.test_type == 'websocket' || github.event.inputs.test_type == 'all'
+        run: |
+          VUS="${{ github.event.inputs.vus || '100' }}"
+          DURATION="${{ github.event.inputs.duration || '1m' }}"
+          k6 run \
+            --vus "$VUS" \
+            --duration "$DURATION" \
+            --out json=results/websocket-test-result.json \
+            tests/k6/websocket-load-test.js || true
+        env:
+          WS_URL: ws://localhost:3000
+          HTTP_URL: http://localhost:3000
+          EVENT_ID: ${{ steps.get-event.outputs.event_id || 'evt-default' }}       
+
+      # 테스트 결과 저장 (아티팩트로 업로드)
+      - name: Upload test results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: k6-results-${{ github.run_number }}
+          path: results/
+          retention-days: 30
+
+      - name: Stop services
+        if: always()
+        run: docker compose -f docker-compose.yml -f docker-compose.api.yml down

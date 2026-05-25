@@ -50,10 +50,26 @@ services:
       - "9090:9090"
     volumes:
       - ./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./infra/prometheus/alert-rules.yaml:/etc/prometheus/alert-rules.yaml
       - prometheus_data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
+    networks:
+      - distribute-sys-network
+    profiles:
+      - monitoring
+      
+  redis-exporter:
+    image: oliver006/redis_exporter:latest
+    container_name: distribute-sys-redis-exporter
+    ports:
+      - "9121:9121"
+    environment:
+      REDIS_ADDR: "redis://redis:6379"
+    depends_on:
+      redis:
+        condition: service_healthy
     networks:
       - distribute-sys-network
     profiles:

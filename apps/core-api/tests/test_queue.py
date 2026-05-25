@@ -84,24 +84,33 @@ class TestQueueService:
     mock_redis.zrem.assert_called_once()
     assert result is True
 
-  def test_consume_token_when_in_queue(self, mock_redis):
-    """position=1 소비: ZREM 호출 및 access_token 반환"""
+  def test_consume_token_when_position_1(self, mock_redis):
+    """position=1 소비: Lua eval 호출 및 access_token 반환 (원자성)"""
     from src.services.queue_service import QueueService
 
-    mock_redis.zrank.return_value = 0
-    mock_redis.zrem.return_value = 1
+    mock_redis.eval.return_value = 1
     service = QueueService(mock_redis)
 
     token = service.consume_token("user-1", "event-1")
     assert token is not None
     assert isinstance(token, str)
-    mock_redis.zrem.assert_called_once()
+    mock_redis.eval.assert_called_once()
 
-  def test_consume_token_not_in_queue(self, mock_redis):
-    """대기열에 없는 사용자 consume → None"""
+  def test_consume_token_already_consumed(self, mock_redis):
+    """이미 다른 요청이 consume한 경우 → None (Lua eval 반환 0)"""
     from src.services.queue_service import QueueService
 
-    mock_redis.zrank.return_value = None
+    mock_redis.eval.return_value = 0
+    service = QueueService(mock_redis)
+
+    token = service.consume_token("user-1", "event-1")
+    assert token is None
+
+  def test_consume_token_not_position_1(self, mock_redis):
+    """position≠1이면 consume 실패 → None (Lua eval 반환 0)"""
+    from src.services.queue_service import QueueService
+
+    mock_redis.eval.return_value = 0
     service = QueueService(mock_redis)
 
     token = service.consume_token("user-1", "event-1")
@@ -123,6 +132,58 @@ class TestQueueAPI:
     assert data["code"] == 200
     assert data["data"]["position"] == 1
     assert "queue_token" in data["data"]
+
+  def test_post_join_rate_limit_exceeded(self, app_client):
+    """Rate limiting: 1초 내 2번째 요청 → 429"""
+    client, mock_redis = app_client
+    mock_redis.reset_mock()
+    mock_redis.zrank.side_effect = [None, 0]
+    mock_redis.zcard.return_value = 1
+    mock_redis.incr.return_value = 2
+    mock_redis.expire.return_value = True
+
+    response = client.post("/api/queue/join", json={"user_id": "u1", "event_id": "e1"})
+    assert response.status_code == 429
+    data = response.json()
+    assert data["code"] == 429
+    assert "retry_after" in data["data"]
+
+  def test_get_status_without_auth(self, app_client):
+    """queue_token 없이 /status 접근 → 401"""
+    client, mock_redis = app_client
+    response = client.get("/api/queue/status?user_id=u1&event_id=e1")
+    assert response.status_code == 401
+
+  def test_get_status_with_valid_queue_token(self, app_client):
+    """queue_token으로 /status 접근 → 성공"""
+    from src.auth.token import create_queue_token
+
+    client, mock_redis = app_client
+    token = create_queue_token("u1", "e1", 5)
+    mock_redis.zrank.return_value = 4
+    mock_redis.zcard.return_value = 10
+
+    response = client.get(
+      "/api/queue/status?user_id=u1&event_id=e1",
+      headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["data"]["position"] == 5
+    assert data["data"]["total"] == 10
+
+  def test_get_status_user_mismatch(self, app_client):
+    """query user_id와 token user_id 불일치 → 403"""
+    from src.auth.token import create_queue_token
+
+    client, mock_redis = app_client
+    token = create_queue_token("u1", "e1", 5)
+
+    response = client.get(
+      "/api/queue/status?user_id=u2&event_id=e1",
+      headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 403
 
 
 class TestTokenAuth:

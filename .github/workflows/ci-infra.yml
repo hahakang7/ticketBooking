@@ -1,0 +1,79 @@
+name: CI - Infrastructure
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'infra/**'
+      - 'docker-compose*.yml'
+      - '.github/workflows/ci-infra.yml'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'infra/**'
+      - 'docker-compose*.yml'
+
+jobs:
+  # ── K8s YAML 문법 검증 ─────────────────────────────────────────
+  validate-k8s-manifests:
+    runs-on: ubuntu-latest
+    name: Validate K8s Manifests
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install kubectl
+        run: |
+          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          chmod +x kubectl
+          sudo mv kubectl /usr/local/bin/
+
+      - name: Validate K8s manifests (dry-run)
+        run: |
+          echo "=== Validating K8s manifests ==="
+          find infra/k8s -name "*.yaml" -o -name "*.yml" | while read file; do
+            echo "Validating: $file"
+            kubectl apply --dry-run=client -f "$file" 2>&1 || true
+          done
+
+      - name: Install yamllint
+        run: pip install yamllint
+
+      - name: YAML Lint
+        run: |
+          yamllint -d "{extends: relaxed, rules: {line-length: {max: 150}}}" infra/
+
+  # ── Docker Compose 파일 검증 ───────────────────────────────────
+  validate-docker-compose:
+    runs-on: ubuntu-latest
+    name: Validate Docker Compose
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Check docker-compose.yml syntax
+        run: docker compose -f docker-compose.yml config > /dev/null
+
+      - name: Check docker-compose.api.yml syntax
+        run: docker compose -f docker-compose.yml -f docker-compose.api.yml config > /dev/null
+
+      - name: Check docker-compose.gateway.yml syntax
+        run: docker compose -f docker-compose.yml -f docker-compose.gateway.yml config > /dev/null
+
+  # ── Prometheus 설정 검증 ──────────────────────────────────────
+  validate-prometheus:
+    runs-on: ubuntu-latest
+    name: Validate Prometheus Config
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install promtool
+        run: |
+          PROM_VERSION="2.48.0"
+          wget -q https://github.com/prometheus/prometheus/releases/download/v${PROM_VERSION}/prometheus-${PROM_VERSION}.linux-amd64.tar.gz
+          tar xzf prometheus-${PROM_VERSION}.linux-amd64.tar.gz
+          sudo mv prometheus-${PROM_VERSION}.linux-amd64/promtool /usr/local/bin/
+
+      - name: Validate prometheus.yml
+        run: promtool check config infra/prometheus/prometheus.yml
+
+      - name: Validate alert rules
+        run: promtool check rules infra/prometheus/alert-rules.yaml

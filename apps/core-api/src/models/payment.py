@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal
 from sqlalchemy import Column, String, DateTime, ForeignKey, Index, Enum, Numeric
 from sqlalchemy.dialects.postgresql import UUID
@@ -19,8 +19,8 @@ class Payment(Base):
     default="pending",
     nullable=False
   )
-  payment_method = Column(String(50), nullable=False)  # card, bank_transfer
-  created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+  payment_method = Column(String(50), nullable=False)
+  created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
 
   __table_args__ = (
     Index("idx_payments_reservation", "reservation_id"),

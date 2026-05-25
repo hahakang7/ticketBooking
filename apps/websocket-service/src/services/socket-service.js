@@ -1,5 +1,6 @@
 import logger from '../utils/logger.js'
 import { SOCKET_EVENTS, HEARTBEAT_INTERVAL } from '../utils/constants.js'
+import { wsConnectionsActive, wsDisconnectionsTotal } from '../metrics.js'
 
 class SocketService {
   constructor(io) {
@@ -28,6 +29,7 @@ class SocketService {
     socket.on('disconnect', () => {
       this.handleDisconnection(socket)
     })
+    wsConnectionsActive.inc()
   }
 
   setupHeartbeat(socket) {
@@ -48,6 +50,9 @@ class SocketService {
   broadcastToRoom(roomName, event, data) {
     this.io.to(roomName).emit(event, data)
     logger.debug(`Broadcasted to room ${roomName}:`, event)
+    wsConnectionsActive.dec()
+    wsDisconnectionsTotal.inc()
+    this.connections.delete(socket.id)
   }
 
   broadcastToAll(event, data) {

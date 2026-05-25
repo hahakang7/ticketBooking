@@ -1,0 +1,105 @@
+# Redis Standalone (로컬 개발 / 단순 환경)
+# docker-compose.yml의 Redis와 동일한 역할
+apiVersion: redis.redis.opstreelabs.in/v1beta1
+kind: Redis
+metadata:
+  name: redis-standalone
+  namespace: default
+spec:
+  kubernetesConfig:
+    image: redis:7-alpine
+    imagePullPolicy: IfNotPresent
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+  storage:
+    volumeClaimTemplate:
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 5Gi
+  redisConfig:
+    additionalRedisConfig: |
+      maxmemory 400mb
+      maxmemory-policy allkeys-lru
+      appendonly yes
+      # 대기열 키 TTL 설정 (queue.py의 QUEUE_TTL = 3600)
+      # 분산 락 TTL (constants.py의 LOCK_TTL = 300)
+  redisExporter:
+    enabled: true
+    image: oliver006/redis_exporter:latest
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 100m
+        memory: 128Mi
+---
+# Redis Cluster (프로덕션 고가용성)
+apiVersion: redis.redis.opstreelabs.in/v1beta1
+kind: RedisCluster
+metadata:
+  name: redis-cluster
+  namespace: default
+spec:
+  clusterSize: 3          # 마스터 3개 (각각 슬레이브 1개 = 총 6 Pod)
+  kubernetesConfig:
+    image: redis:7-alpine
+    imagePullPolicy: IfNotPresent
+    resources:
+      requests:
+        cpu: 200m
+        memory: 256Mi
+      limits:
+        cpu: 1000m
+        memory: 1Gi
+  storage:
+    volumeClaimTemplate:
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 10Gi
+  redisConfig:
+    additionalRedisConfig: |
+      maxmemory 800mb
+      maxmemory-policy allkeys-lru
+      appendonly yes
+      # Pub/Sub 설정 (seat_updates:{event_id} 채널용)
+      tcp-backlog 511
+      hz 20
+  redisExporter:
+    enabled: true
+    image: oliver006/redis_exporter:latest
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 100m
+        memory: 128Mi
+---
+# Redis Service (K8s 내부 접근용)
+# configmap.yaml의 REDIS_URL: redis://redis-cluster:6379 와 일치
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: default
+  labels:
+    app: redis-standalone
+spec:
+  selector:
+    app: redis-standalone
+  ports:
+    - name: redis
+      port: 6379
+      targetPort: 6379
+      protocol: TCP
+  type: ClusterIP
