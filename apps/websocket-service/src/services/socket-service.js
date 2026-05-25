@@ -45,14 +45,13 @@ class SocketService {
   handleDisconnection(socket) {
     logger.info(`🔌 Client disconnected: ${socket.id}`)
     this.connections.delete(socket.id)
+    wsConnectionsActive.dec()
+    wsDisconnectionsTotal.inc()
   }
 
   broadcastToRoom(roomName, event, data) {
     this.io.to(roomName).emit(event, data)
     logger.debug(`Broadcasted to room ${roomName}:`, event)
-    wsConnectionsActive.dec()
-    wsDisconnectionsTotal.inc()
-    this.connections.delete(socket.id)
   }
 
   broadcastToAll(event, data) {
