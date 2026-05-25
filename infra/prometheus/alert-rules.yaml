@@ -155,4 +155,3 @@ groups:
         annotations:
           summary: "WebSocket 연결 해제 급증"
           description: "5분 내 {{ $value }}회 연결 해제"
-          
