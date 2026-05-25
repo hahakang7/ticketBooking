@@ -54,3 +54,30 @@ def get_current_user(authorization: str = Header(...)) -> dict:
       detail="Access token required",
     )
   return payload
+
+
+def get_user_from_queue_token(authorization: str = Header(...)) -> dict:
+  """
+  Authorization: Bearer <queue_token> 검증.
+  반환: {"sub": user_id, "event_id": event_id, "position": position, "type": "queue"}
+  """
+  auth_header = authorization.strip()
+  if not auth_header.lower().startswith("bearer "):
+    raise HTTPException(
+      status_code=status.HTTP_401_UNAUTHORIZED,
+      detail="Invalid authorization header format",
+    )
+  token = auth_header[7:]
+  try:
+    payload = decode_token(token)
+  except ValueError as e:
+    raise HTTPException(
+      status_code=status.HTTP_401_UNAUTHORIZED,
+      detail=str(e),
+    )
+  if payload.get("type") != "queue":
+    raise HTTPException(
+      status_code=status.HTTP_401_UNAUTHORIZED,
+      detail="Queue token required",
+    )
+  return payload

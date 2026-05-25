@@ -20,6 +20,7 @@ class Settings(BaseSettings):
   secret_key: str
   jwt_algorithm: str = "HS256"
   jwt_expiration_hours: int = 24
+  queue_token_expiration_hours: int = 1
 
   # CORS
   cors_origins: List[str] = ["http://localhost:3001", "http://localhost:5173"]
