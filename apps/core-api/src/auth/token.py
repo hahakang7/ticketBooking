@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict
 
 from jose import jwt, JWTError
@@ -9,8 +9,8 @@ settings = get_settings()
 
 
 def create_queue_token(user_id: str, event_id: str, position: int) -> str:
-  """대기열 JWT 생성 (TTL: 1시간)"""
-  expire = datetime.utcnow() + timedelta(hours=1)
+  """대기열 JWT 생성"""
+  expire = datetime.now(timezone.utc) + timedelta(hours=settings.queue_token_expiration_hours)
   payload = {
     "sub": user_id,
     "event_id": event_id,
@@ -22,8 +22,8 @@ def create_queue_token(user_id: str, event_id: str, position: int) -> str:
 
 
 def create_access_token(user_id: str, event_id: str) -> str:
-  """예매 허가 JWT 생성 (TTL: 24시간)"""
-  expire = datetime.utcnow() + timedelta(hours=settings.jwt_expiration_hours)
+  """예매 허가 JWT 생성"""
+  expire = datetime.now(timezone.utc) + timedelta(hours=settings.jwt_expiration_hours)
   payload = {
     "sub": user_id,
     "event_id": event_id,

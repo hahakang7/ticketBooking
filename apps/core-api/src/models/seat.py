@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal
 from sqlalchemy import Column, String, DateTime, Integer, ForeignKey, Index, Enum, Numeric, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
@@ -21,8 +21,8 @@ class Seat(Base):
     nullable=False
   )
   price = Column(Numeric(10, 2), nullable=False)
-  held_by = Column(UUID(as_uuid=True), nullable=True)  # 좌석을 점유한 사용자
-  held_until = Column(DateTime, nullable=True)  # 점유 만료 시간
+  held_by = Column(UUID(as_uuid=True), nullable=True)
+  held_until = Column(DateTime(timezone=True), nullable=True)
 
   __table_args__ = (
     UniqueConstraint("event_id", "section", "row", "seat_number", name="uq_seats_event_section_row_number"),
