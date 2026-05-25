@@ -25,10 +25,27 @@ class SeatService {
   broadcastSeatUpdate(eventId, seatData) {
     this.updateSeatState(eventId, seatData)
     this.io.to(`event_${eventId}`).emit('seat_status_updated', {
-      eventId,
-      seat: seatData,
+      event_id: eventId,
+      updates: [{ seat_id: seatData.seatId, status: seatData.status }],
       timestamp: new Date().toISOString(),
     })
+  }
+
+  broadcastBatchSeatUpdate(eventId, seats) {
+    seats.forEach((seat) => this.updateSeatState(eventId, seat))
+    this.io.to(`event_${eventId}`).emit('seat_status_updated', {
+      event_id: eventId,
+      updates: seats.map((s) => ({ seat_id: s.seatId, status: s.status })),
+      timestamp: new Date().toISOString(),
+    })
+    const reserved = seats.filter((s) => s.status === 'sold')
+    if (reserved.length) {
+      this.io.to(`event_${eventId}`).emit('seat_reserved', {
+        event_id: eventId,
+        seat_ids: reserved.map((s) => s.seatId),
+        timestamp: new Date().toISOString(),
+      })
+    }
   }
 
   getAvailableSeatsCount(eventId) {
