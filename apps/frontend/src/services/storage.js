@@ -1,10 +1,30 @@
+function decodeJwtExp(token) {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]))
+    return payload.exp ? payload.exp * 1000 : null
+  } catch {
+    return null
+  }
+}
+
 class StorageService {
   setAccessToken(token) {
     localStorage.setItem('access_token', token)
   }
 
   getAccessToken() {
-    return localStorage.getItem('access_token')
+    const token = localStorage.getItem('access_token')
+    if (!token) return null
+    const expMs = decodeJwtExp(token)
+    if (expMs && Date.now() >= expMs) {
+      this.removeAccessToken()
+      return null
+    }
+    return token
+  }
+
+  isAccessTokenExpired() {
+    return this.getAccessToken() === null && localStorage.getItem('access_token') !== null
   }
 
   removeAccessToken() {

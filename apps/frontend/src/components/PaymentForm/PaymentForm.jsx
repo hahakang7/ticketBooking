@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import api from '../../services/api';
 import './PaymentForm.css';
 
 function formatCardNumber(value) {
@@ -22,7 +23,7 @@ function validate(fields) {
   return errors;
 }
 
-export default function PaymentForm({ totalPrice, onSuccess }) {
+export default function PaymentForm({ totalPrice, selectedSeats = [], onSuccess }) {
   const [fields, setFields] = useState({ cardNumber: '', cardHolder: '', expiry: '', cvv: '' });
   const [errors, setErrors] = useState({});
   const [apiError, setApiError] = useState('');
@@ -46,12 +47,26 @@ export default function PaymentForm({ totalPrice, onSuccess }) {
     setLoading(true);
     setApiError('');
     try {
-      // 실제 환경에서는 PCI-compliant 결제 SDK를 통해 처리
-      // 현재는 Team Member 2의 결제 API 구현 대기 중 → mock 처리
-      await new Promise((r) => setTimeout(r, 1800));
-      onSuccess();
-    } catch {
-      setApiError('결제 처리 중 오류가 발생했습니다. 다시 시도해주세요.');
+      const seatIds = selectedSeats.map((s) => s.backendSeatId).filter(Boolean);
+
+      // 1단계: 좌석 hold + 예약 생성
+      const reservationRes = await api.post('/v1/reservations', { seat_ids: seatIds });
+      const reservationId = reservationRes?.data?.reservation_id ?? reservationRes?.reservation_id;
+      if (!reservationId) throw new Error('예약 ID를 받지 못했습니다.');
+
+      // 2단계: 결제 처리
+      const paymentRes = await api.post('/v1/payments', {
+        reservation_id: reservationId,
+        payment_method: 'card',
+        amount: totalPrice,
+      });
+      const paymentId = paymentRes?.data?.payment_id ?? paymentRes?.payment_id;
+      const paidAt = paymentRes?.data?.created_at ?? paymentRes?.created_at ?? new Date().toISOString();
+
+      onSuccess({ paymentId, paidAt });
+    } catch (err) {
+      const msg = err?.response?.data?.detail || err?.message || '결제 처리 중 오류가 발생했습니다.';
+      setApiError(msg);
     } finally {
       setLoading(false);
     }

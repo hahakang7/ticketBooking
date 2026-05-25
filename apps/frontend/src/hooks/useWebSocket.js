@@ -68,11 +68,23 @@ export const useWebSocket = (eventId) => {
       })
     }
 
+    // { event_id, seat_ids: [] }
+    const handleSeatReserved = (data) => {
+      const seatIds = data?.seat_ids || []
+      if (!seatIds.length) return
+      setSeatUpdates((prev) => {
+        const next = { ...prev }
+        seatIds.forEach((id) => { next[id] = 'sold' })
+        return next
+      })
+    }
+
     socketService.on('connected', handleConnected)
     socketService.on('disconnected', handleDisconnected)
     socketService.on('error', handleError)
     socketService.on('seat_status_updated', handleSeatStatusUpdated)
     socketService.on('seat_hold_expired', handleSeatHoldExpired)
+    socketService.on('seat_reserved', handleSeatReserved)
 
     // 이미 연결된 경우 즉시 구독
     if (socketService.isConnected()) {
@@ -86,6 +98,7 @@ export const useWebSocket = (eventId) => {
       socketService.off('error', handleError)
       socketService.off('seat_status_updated', handleSeatStatusUpdated)
       socketService.off('seat_hold_expired', handleSeatHoldExpired)
+      socketService.off('seat_reserved', handleSeatReserved)
       clearHeartbeat()
     }
   }, [eventId])

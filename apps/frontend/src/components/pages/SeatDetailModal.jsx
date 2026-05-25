@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { getSectionSeats } from '../../data/stadium-data';
 import api from '../../services/api';
 import { useWebSocket } from '../../hooks/useWebSocket';
@@ -123,24 +123,30 @@ export default function SeatDetailModal({ section, onClose, onProceedToPayment }
     );
   }
 
-  const handleSeatClick = (seat) => {
+  const handleSeatClick = useCallback((seat) => {
     if (seat.status !== 'available') return;
-    const already = selectedSeats.some(s => s.id === seat.id);
-    if (already) {
-      setSelectedSeats(prev => prev.filter(s => s.id !== seat.id));
-    } else if (selectedSeats.length < 4) {
-      setSelectedSeats(prev => [...prev, seat]);
-    }
-  };
+    setSelectedSeats(prev => {
+      const already = prev.some(s => s.id === seat.id);
+      if (already) return prev.filter(s => s.id !== seat.id);
+      if (prev.length >= 4) return prev;
+      return [...prev, seat];
+    });
+  }, []);
 
-  const totalPrice = selectedSeats.reduce((sum, s) => sum + s.price, 0);
+  const totalPrice = useMemo(
+    () => selectedSeats.reduce((sum, s) => sum + s.price, 0),
+    [selectedSeats]
+  );
 
   // 행별로 그룹핑
-  const rowMap = {};
-  seats.forEach(seat => {
-    if (!rowMap[seat.row]) rowMap[seat.row] = [];
-    rowMap[seat.row].push(seat);
-  });
+  const rowMap = useMemo(() => {
+    const map = {};
+    seats.forEach(seat => {
+      if (!map[seat.row]) map[seat.row] = [];
+      map[seat.row].push(seat);
+    });
+    return map;
+  }, [seats]);
 
   return (
     <Modal
@@ -172,6 +178,7 @@ export default function SeatDetailModal({ section, onClose, onProceedToPayment }
                       key={seat.id}
                       className={`seat-cell ${cls}`}
                       onClick={() => handleSeatClick(seat)}
+                      onTouchEnd={(e) => { e.preventDefault(); handleSeatClick(seat); }}
                       disabled={seat.status !== 'available'}
                       title={`${seat.seatNum} — ${
                         seat.status === 'available' ? '선택가능' :

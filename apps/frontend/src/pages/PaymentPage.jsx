@@ -10,16 +10,15 @@ const MOCK_EVENT = {
 export default function PaymentPage({ selectedSeats = [], onSuccess, onBack }) {
   const totalPrice = selectedSeats.reduce((sum, s) => sum + (s.price || 0), 0);
 
-  const handlePaymentSuccess = () => {
-    const bookingId = `TL-${Date.now().toString(36).toUpperCase()}`;
+  const handlePaymentSuccess = (paymentResult) => {
     onSuccess({
-      bookingId,
+      bookingId: paymentResult.paymentId || `TL-${Date.now().toString(36).toUpperCase()}`,
       eventName: MOCK_EVENT.name,
       eventDate: MOCK_EVENT.date,
       eventVenue: MOCK_EVENT.venue,
       seats: selectedSeats,
       totalPrice,
-      paidAt: new Date().toISOString(),
+      paidAt: paymentResult.paidAt || new Date().toISOString(),
     });
   };
 
@@ -94,6 +93,7 @@ export default function PaymentPage({ selectedSeats = [], onSuccess, onBack }) {
           <div style={{ background: '#fff', border: '1px solid #E5E7EB', borderRadius: '0.75rem', padding: '1.5rem' }}>
             <PaymentForm
               totalPrice={totalPrice}
+              selectedSeats={selectedSeats}
               onSuccess={handlePaymentSuccess}
             />
           </div>
