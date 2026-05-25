@@ -2,6 +2,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import logging
 
+from prometheus_fastapi_instrumentator import Instrumentator
+from prometheus_client import Counter as PromCounter
+from prometheus_fastapi_instrumentator import Instrumentator
+from src.metrics import duplicate_reservation_total
+
 from src.config import get_settings
 from src.database.db import engine
 from src.api.v1 import health, events, queue
@@ -25,6 +30,7 @@ app.add_middleware(
   allow_methods=["*"],
   allow_headers=["*"],
 )
+
 
 # 커스텀 미들웨어 (등록 역순으로 실행)
 app.add_middleware(RateLimiterMiddleware)
@@ -69,6 +75,7 @@ async def shutdown_event():
   except Exception as e:
     logger.error(f"Redis close failed: {e}")
 
+Instrumentator().instrument(app).expose(app, include_in_schema=False)
 
 # 라우터 등록
 app.include_router(health.router)

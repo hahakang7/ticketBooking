@@ -90,7 +90,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: redis-service
+  name: redis
   namespace: default
   labels:
     app: redis-standalone

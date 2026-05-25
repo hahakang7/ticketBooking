@@ -101,6 +101,21 @@ jobs:
         env:
           BASE_URL: http://localhost:8000
 
+      - name: Run WebSocket Load Test
+        if: github.event.inputs.test_type == 'websocket' || github.event.inputs.test_type == 'all'
+        run: |
+          VUS="${{ github.event.inputs.vus || '100' }}"
+          DURATION="${{ github.event.inputs.duration || '1m' }}"
+          k6 run \
+            --vus "$VUS" \
+            --duration "$DURATION" \
+            --out json=results/websocket-test-result.json \
+            tests/k6/websocket-load-test.js || true
+        env:
+          WS_URL: ws://localhost:3000
+          HTTP_URL: http://localhost:3000
+          EVENT_ID: ${{ steps.get-event.outputs.event_id || 'evt-default' }}       
+
       # 테스트 결과 저장 (아티팩트로 업로드)
       - name: Upload test results
         uses: actions/upload-artifact@v3

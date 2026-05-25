@@ -11,6 +11,7 @@ import SeatService from './services/seat-service.js'
 import { setupConnectionEvents } from './events/connection.js'
 import { setupSeatEvents } from './events/seat-events.js'
 import { setupSubscriptionEvents } from './events/subscription.js'
+import { register, wsConnectionsActive, wsDisconnectionsTotal } from './metrics.js'
 
 const app = express()
 const httpServer = createServer(app)
@@ -49,6 +50,11 @@ app.get('/health', (req, res) => {
     timestamp: new Date().toISOString(),
     connections: socketService.getConnectionStats(),
   })
+})
+
+app.get('/metrics', async (req, res) => {
+  res.set('Content-Type', register.contentType)
+  res.end(await register.metrics())
 })
 
 // Stats 엔드포인트
