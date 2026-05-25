@@ -1,0 +1,252 @@
+/* ===== Light Theme 색상 팔레트 ===== */
+
+:root {
+  /* UI 색상 */
+  --ui-primary: #3B82F6;           /* 파란색 */
+  --ui-success: #10B981;           /* 초록색 */
+  --ui-warning: #F59E0B;           /* 주황색 */
+  --ui-danger: #EF4444;            /* 빨간색 */
+  --ui-info: #0891B2;              /* 청록색 */
+  
+  /* 회색 스케일 */
+  --gray-50: #F9FAFB;
+  --gray-100: #F3F4F6;
+  --gray-200: #E5E7EB;
+  --gray-300: #D1D5DB;
+  --gray-400: #9CA3AF;
+  --gray-500: #6B7280;
+  --gray-600: #4B5563;
+  --gray-700: #374151;
+  --gray-800: #1F2937;
+  --gray-900: #111827;
+}
+
+/* ===== 좌석 상태 색상 (메인 색상) ===== */
+
+.seat {
+  transition: all 0.2s ease;
+  cursor: pointer;
+  border: 2px solid transparent;
+  border-radius: 6px;
+}
+
+/* 구매 가능 (초록색) */
+.seat.available {
+  background-color: #34D399;
+  border-color: #10B981;
+  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
+}
+
+.seat.available:hover {
+  background-color: #10B981;
+  box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
+  transform: scale(1.05);
+}
+
+/* 임시 점유 (노란색) */
+.seat.hold {
+  background-color: #FBBF24;
+  border-color: #F59E0B;
+  box-shadow: 0 2px 4px rgba(245, 158, 11, 0.2);
+}
+
+.seat.hold:hover {
+  background-color: #F59E0B;
+  box-shadow: 0 4px 8px rgba(245, 158, 11, 0.3);
+}
+
+/* 판매 완료 (회색) */
+.seat.sold {
+  background-color: #D1D5DB;
+  border-color: #9CA3AF;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.seat.sold:hover {
+  cursor: not-allowed;
+}
+
+/* 사용자 선택 (밝은 청록색) */
+.seat.selected {
+  background-color: #06B6D4;
+  border-color: #0891B2;
+  border-width: 3px;
+  box-shadow: 0 0 12px rgba(6, 182, 212, 0.5);
+  transform: scale(1.1);
+}
+
+/* 구매 불가 (라이트 회색) */
+.seat.unavailable {
+  background-color: #E5E7EB;
+  border-color: #D1D5DB;
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.seat.unavailable:hover {
+  cursor: not-allowed;
+}
+
+/* ===== 상태 배지 ===== */
+
+.status-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.status-badge.success {
+  background-color: rgba(16, 185, 129, 0.1);
+  color: #065F46;
+  border: 1px solid #A7F3D0;
+}
+
+.status-badge.warning {
+  background-color: rgba(245, 158, 11, 0.1);
+  color: #78350F;
+  border: 1px solid #FCD34D;
+}
+
+.status-badge.danger {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: #7F1D1D;
+  border: 1px solid #FCA5A5;
+}
+
+.status-badge.info {
+  background-color: rgba(8, 145, 178, 0.1);
+  color: #164E63;
+  border: 1px solid #A5F3FC;
+}
+
+/* ===== 버튼 테마 ===== */
+
+.btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn.btn-primary {
+  background-color: var(--ui-primary);
+  color: white;
+}
+
+.btn.btn-primary:hover {
+  background-color: #2563EB;
+  box-shadow: var(--shadow-md);
+}
+
+.btn.btn-success {
+  background-color: var(--ui-success);
+  color: white;
+}
+
+.btn.btn-success:hover {
+  background-color: #059669;
+  box-shadow: var(--shadow-md);
+}
+
+.btn.btn-danger {
+  background-color: var(--ui-danger);
+  color: white;
+}
+
+.btn.btn-danger:hover {
+  background-color: #DC2626;
+  box-shadow: var(--shadow-md);
+}
+
+.btn.btn-secondary {
+  background-color: var(--gray-200);
+  color: var(--gray-700);
+}
+
+.btn.btn-secondary:hover {
+  background-color: var(--gray-300);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ===== 카드 ===== */
+
+.card {
+  background-color: white;
+  border: 1px solid var(--gray-200);
+  border-radius: 12px;
+  padding: var(--spacing-lg);
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s ease;
+}
+
+.card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+/* ===== 로딩 상태 ===== */
+
+.spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 3px solid var(--gray-200);
+  border-top-color: var(--ui-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ===== 토스트 알림 ===== */
+
+.toast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background-color: white;
+  border-left: 4px solid var(--ui-primary);
+  border-radius: 8px;
+  padding: var(--spacing-md);
+  box-shadow: var(--shadow-lg);
+  animation: slideIn 0.3s ease;
+  z-index: 1000;
+}
+
+.toast.success {
+  border-left-color: var(--ui-success);
+}
+
+.toast.danger {
+  border-left-color: var(--ui-danger);
+}
+
+.toast.warning {
+  border-left-color: var(--ui-warning);
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}

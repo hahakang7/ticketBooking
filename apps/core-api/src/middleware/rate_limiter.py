@@ -15,6 +15,9 @@ DEFAULT_LIMIT = (10, 1)
 
 class RateLimiterMiddleware(BaseHTTPMiddleware):
   async def dispatch(self, request: Request, call_next):
+    if request.method == "OPTIONS":
+      return await call_next(request)
+
     try:
       from src.redis.client import redis_client
       r = redis_client

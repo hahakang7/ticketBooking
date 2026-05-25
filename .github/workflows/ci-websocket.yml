@@ -1,0 +1,74 @@
+name: CI - WebSocket Service
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'apps/websocket-service/**'
+      - '.github/workflows/ci-websocket.yml'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'apps/websocket-service/**'
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    name: Lint & Format Check
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: 'apps/websocket-service/package-lock.json'
+      
+      - name: Install dependencies
+        working-directory: ./apps/websocket-service
+        run: npm ci
+      
+      - name: Run ESLint
+        working-directory: ./apps/websocket-service
+        run: npm run lint
+  
+  test:
+    runs-on: ubuntu-latest
+    name: Unit Tests
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: 'apps/websocket-service/package-lock.json'
+      
+      - name: Install dependencies
+        working-directory: ./apps/websocket-service
+        run: npm ci
+      
+      - name: Run tests
+        working-directory: ./apps/websocket-service
+        run: npm test --if-present
+  
+  build:
+    runs-on: ubuntu-latest
+    name: Build Docker Image
+    needs: [lint, test]
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      
+      - name: Build image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./apps/websocket-service
+          push: false
+          tags: websocket-service:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

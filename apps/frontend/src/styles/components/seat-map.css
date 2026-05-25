@@ -1,0 +1,67 @@
+/* ──────────────────────────────────────────────
+   seat-map.css
+   src/styles/components/seat-map.css
+────────────────────────────────────────────── */
+
+.seat-map {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+/* ---- 툴바 ---- */
+.map-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  background: #f8f8f8;
+  border-bottom: 1px solid #e0e0e0;
+  flex-shrink: 0;
+}
+
+.hint-btn {
+  background: #FF6B00;
+  color: #fff;
+  border: none;
+  padding: 5px 12px;
+  border-radius: 3px;
+  font-size: 12px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.hint-btn:hover { background: #e55f00; }
+
+.zoom-controls {
+  display: flex;
+  gap: 3px;
+}
+.zoom-btn {
+  width: 28px; height: 28px;
+  border: 1px solid #bbb;
+  background: #fff;
+  cursor: pointer;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 2px;
+  color: #444;
+  font-family: inherit;
+}
+.zoom-btn:hover { background: #f0f0f0; }
+
+/* ---- SVG ---- */
+.stadium-svg {
+  flex: 1;
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  display: block;
+}
+
+/* ---- 섹션 클릭 효과 ---- */
+.stadium-svg path[style*="cursor: pointer"]:hover {
+  filter: brightness(1.15);
+}
