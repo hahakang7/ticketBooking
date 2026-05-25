@@ -54,6 +54,48 @@ async def lifespan(app: FastAPI):
     logger.error(f"Redis close failed: {e}")
 
 
+
+# 로깅 설정
+logging.basicConfig(
+  level=logging.INFO,
+  format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
+logger = logging.getLogger("core-api")
+
+settings = get_settings()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+  """앱 시작/종료 관리"""
+  logger.info("Application startup")
+
+  try:
+    from src.database.db import SessionLocal
+    db = SessionLocal()
+    from sqlalchemy import text
+    db.execute(text("SELECT 1"))
+    db.close()
+    logger.info("Database connection successful")
+  except Exception as e:
+    logger.error(f"Database connection failed: {e}")
+
+  try:
+    redis_client.ping()
+    logger.info("Redis connection successful")
+  except Exception as e:
+    logger.error(f"Redis connection failed: {e}")
+
+  yield
+
+  logger.info("Application shutdown")
+  try:
+    redis_client.close()
+  except Exception as e:
+    logger.error(f"Redis close failed: {e}")
+
+Instrumentator().instrument(app).expose(app, include_in_schema=False)
+
 # FastAPI 앱 생성
 app = FastAPI(
   title="Ticket Booking API",
@@ -70,7 +112,6 @@ app.add_middleware(
   allow_methods=["*"],
   allow_headers=["*"],
 )
-
 
 # 커스텀 미들웨어 (등록 역순으로 실행)
 app.add_middleware(RateLimiterMiddleware)
