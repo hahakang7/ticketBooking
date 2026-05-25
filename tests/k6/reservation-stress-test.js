@@ -64,18 +64,19 @@ export default function (data) {
   group('좌석 예약 (분산 락 테스트)', function () {
     const startTime = Date.now();
 
-    // TODO: /api/events/{id}/seats/reserve 완성 후 활성화
-    // 현재는 API 스펙에 맞게 준비만 해놓음
     const payload = JSON.stringify({
-      access_token: accessToken,
-      seat_ids: targetSeatIds,
-      hold_duration_seconds: 300,
+      seat_ids: seatIds,
     });
 
     const res = http.post(
-      `${BASE_URL}/api/events/${eventId}/seats/reserve`,
+      `${BASE_URL}/api/v1/reservations`,
       payload,
-      { headers }
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
+        }
+      }
     );
 
     const duration = Date.now() - startTime;

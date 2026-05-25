@@ -3,11 +3,17 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import logging
 
+from prometheus_fastapi_instrumentator import Instrumentator
+from prometheus_client import Counter as PromCounter
+from prometheus_fastapi_instrumentator import Instrumentator
+from src.metrics import duplicate_reservation_total
+
 from src.config import get_settings
 from src.database.db import engine
 from src.api.v1 import health, events, queue, seats, reservations, payments
 from src.middleware import ErrorHandlerMiddleware, LoggerMiddleware, RateLimiterMiddleware
 from src.redis.client import redis_client
+
 
 # 로깅 설정
 logging.basicConfig(
@@ -48,6 +54,7 @@ async def lifespan(app: FastAPI):
   except Exception as e:
     logger.error(f"Redis close failed: {e}")
 
+Instrumentator().instrument(app).expose(app, include_in_schema=False)
 
 # FastAPI 앱 생성
 app = FastAPI(
