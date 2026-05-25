@@ -109,9 +109,9 @@
 }
 
 .seat-cell.sold {
-  background: #e0e0e0;
-  border-color: #bbb;
-  color: #bbb;
+  background: #9e9e9e;
+  border-color: #757575;
+  color: #fff;
   cursor: not-allowed;
   text-decoration: line-through;
 }
@@ -147,7 +147,7 @@
 }
 .seat-sample.available { background: #e8e8e8; }
 .seat-sample.hold      { background: #f0ad4e; border-color: #d09030; }
-.seat-sample.sold      { background: #e0e0e0; }
+.seat-sample.sold      { background: #9e9e9e; border-color: #757575; }
 .seat-sample.selected  { background: #1e88e5; border-color: #1565c0; }
 
 /* ---- 선택 요약 ---- */

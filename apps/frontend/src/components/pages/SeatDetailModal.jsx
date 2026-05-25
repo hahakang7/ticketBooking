@@ -34,7 +34,7 @@ function mapToFrontendSeats(apiSeats, sectionId, price) {
     id: `${sectionId}-${i}`,
     backendSeatId: String(s.seat_id),
     sectionId,
-    seatNum: `${s.row}-${s.seat_number}`,
+    seatNum: `${String.fromCharCode(65 + Math.floor(i / COLS))}${(i % COLS) + 1}`,
     row: Math.floor(i / COLS),
     col: i % COLS,
     status: s.status,
@@ -42,11 +42,7 @@ function mapToFrontendSeats(apiSeats, sectionId, price) {
   }));
 }
 
-let cachedSeatsMap = null; // { eventId, bySection: { A: [], B: [], C: [] } }
-
 async function fetchSeatsBySection() {
-  if (cachedSeatsMap) return cachedSeatsMap;
-
   const eventsRes = await api.get('/v1/events');
   const events = eventsRes?.data?.items ?? eventsRes?.items ?? [];
   if (!events.length) throw new Error('이벤트 없음');
@@ -58,8 +54,7 @@ async function fetchSeatsBySection() {
   const bySection = { A: [], B: [], C: [] };
   allSeats.forEach(s => { if (bySection[s.section]) bySection[s.section].push(s); });
 
-  cachedSeatsMap = { eventId, bySection };
-  return cachedSeatsMap;
+  return { eventId, bySection };
 }
 
 export default function SeatDetailModal({ section, onClose, onProceedToPayment }) {
@@ -113,16 +108,7 @@ export default function SeatDetailModal({ section, onClose, onProceedToPayment }
     load();
   }, [section]);
 
-  if (!section) return null;
-
-  if (loading) {
-    return (
-      <Modal isOpen={true} onClose={onClose} title={`${section.id}구역 — 좌석 선택`} size="md">
-        <div style={{ textAlign: 'center', padding: '3rem', color: '#6B7280' }}>좌석 정보를 불러오는 중...</div>
-      </Modal>
-    );
-  }
-
+  // 모든 훅은 조건부 return 이전에 선언해야 함 (Rules of Hooks)
   const handleSeatClick = useCallback((seat) => {
     if (seat.status !== 'available') return;
     setSelectedSeats(prev => {
@@ -138,7 +124,6 @@ export default function SeatDetailModal({ section, onClose, onProceedToPayment }
     [selectedSeats]
   );
 
-  // 행별로 그룹핑
   const rowMap = useMemo(() => {
     const map = {};
     seats.forEach(seat => {
@@ -147,6 +132,16 @@ export default function SeatDetailModal({ section, onClose, onProceedToPayment }
     });
     return map;
   }, [seats]);
+
+  if (!section) return null;
+
+  if (loading) {
+    return (
+      <Modal isOpen={true} onClose={onClose} title={`${section.id}구역 — 좌석 선택`} size="md">
+        <div style={{ textAlign: 'center', padding: '3rem', color: '#6B7280' }}>좌석 정보를 불러오는 중...</div>
+      </Modal>
+    );
+  }
 
   return (
     <Modal

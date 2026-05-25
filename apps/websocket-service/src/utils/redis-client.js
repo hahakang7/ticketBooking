@@ -2,13 +2,13 @@ import redis from 'redis'
 import { config } from '../config.js'
 
 const redisClient = redis.createClient({
-  host: config.REDIS_HOST,
-  port: config.REDIS_PORT,
-  password: config.REDIS_PASSWORD || undefined,
-  db: config.REDIS_DB,
   socket: {
+    host: config.REDIS_HOST,
+    port: config.REDIS_PORT,
     reconnectStrategy: (retries) => Math.min(retries * 50, 500),
   },
+  password: config.REDIS_PASSWORD || undefined,
+  database: config.REDIS_DB,
 })
 
 redisClient.on('error', (err) => {

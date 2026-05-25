@@ -4,19 +4,21 @@ class SSEService {
     this.listeners = {}
     this.userId = null
     this.eventId = null
+    this.queueToken = null
     this.reconnectAttempts = 0
     this.maxReconnectAttempts = 5
     this.reconnectTimer = null
   }
 
-  connect(userId, eventId) {
+  connect(userId, eventId, queueToken) {
     this.userId = userId
     this.eventId = eventId
+    this.queueToken = queueToken
     this.reconnectAttempts = 0
-    this._createConnection(userId, eventId)
+    this._createConnection(userId, eventId, queueToken)
   }
 
-  _createConnection(userId, eventId) {
+  _createConnection(userId, eventId, queueToken) {
     if (this.eventSource) {
       this.eventSource.close()
       this.eventSource = null
@@ -26,6 +28,9 @@ class SSEService {
     const url = new URL(`${baseUrl}/queue/sse`)
     url.searchParams.append('user_id', userId)
     url.searchParams.append('event_id', eventId)
+    if (queueToken) {
+      url.searchParams.append('queue_token', queueToken)
+    }
 
     this.eventSource = new EventSource(url.toString())
 
@@ -63,7 +68,7 @@ class SSEService {
     const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000)
     this.reconnectAttempts++
     this.reconnectTimer = setTimeout(() => {
-      this._createConnection(this.userId, this.eventId)
+      this._createConnection(this.userId, this.eventId, this.queueToken)
     }, delay)
   }
 
@@ -78,6 +83,7 @@ class SSEService {
     }
     this.userId = null
     this.eventId = null
+    this.queueToken = null
     this.reconnectAttempts = 0
   }
 
