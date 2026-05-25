@@ -1,0 +1,70 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - "alert-rules.yaml"
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: []  # Week 4에 Alertmanager 추가
+
+scrape_configs:
+  # Prometheus 자기 자신 모니터링
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  # Core API (FastAPI) 메트릭 수집
+  # deployment.yaml에 prometheus.io/scrape: "true" 어노테이션 있음
+  - job_name: "core-api"
+    kubernetes_sd_configs:
+      - role: pod
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+        action: keep
+        regex: "true"
+      - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+        action: replace
+        target_label: __metrics_path__
+        regex: (.+)
+      - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+        action: replace
+        regex: ([^:]+)(?::\d+)?;(\d+)
+        replacement: $1:$2
+        target_label: __address__
+      - source_labels: [__meta_kubernetes_pod_label_app]
+        action: replace
+        target_label: app
+    # Docker Compose 환경용 (K8s 없을 때)
+  
+  # Docker Compose 로컬 개발 환경용
+  - job_name: "core-api-local"
+    static_configs:
+      - targets: ["core-api:8000"]
+    metrics_path: "/metrics"
+
+  # WebSocket Service 메트릭 수집
+  - job_name: "websocket-service"
+    static_configs:
+      - targets: ["websocket-service:3000"]
+    metrics_path: "/metrics"
+
+  # Redis 메트릭 (redis_exporter 사용 시)
+  - job_name: "redis"
+    static_configs:
+      - targets: ["redis-exporter:9121"]
+
+  # Node Exporter (서버 시스템 메트릭)
+  - job_name: "node-exporter"
+    static_configs:
+      - targets: ["node-exporter:9100"]
+
+  # Kubernetes 노드 메트릭 (K8s 환경)
+  - job_name: "kubernetes-nodes"
+    kubernetes_sd_configs:
+      - role: node
+    relabel_configs:
+      - action: labelmap
+        regex: __meta_kubernetes_node_label_(.+)
