@@ -28,7 +28,7 @@ export default function SeatMap({ selectedGrade, onGradeClick }) {
   const handleClick = useCallback((id, gradeId) => {
     if (!gradeId) return;
     const grade = STADIUM_GRADES.find(g => g.id === gradeId);
-    if (grade) onGradeClick(grade);
+    if (grade) onGradeClick(grade, id);
   }, [onGradeClick]);
 
   // 외야 잔디 경계 아크 (8° ~ 172°, large-arc=1, sweep=0)

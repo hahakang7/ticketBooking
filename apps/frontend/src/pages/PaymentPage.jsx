@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import PaymentForm from '../components/PaymentForm/PaymentForm';
+import api from '../services/api';
 
 const MOCK_EVENT = {
   name: 'SSG랜더스 vs 한화이글스',
@@ -8,9 +9,50 @@ const MOCK_EVENT = {
 };
 
 export default function PaymentPage({ selectedSeats = [], onSuccess, onBack }) {
+  const [reservationId, setReservationId] = useState(null);
+  const [holdLoading, setHoldLoading] = useState(true);
+  const [holdError, setHoldError] = useState('');
+
+  const reservationIdRef = useRef(null);
+  const paymentSucceeded = useRef(false);
+
   const totalPrice = selectedSeats.reduce((sum, s) => sum + (s.price || 0), 0);
 
+  useEffect(() => {
+    const seatIds = selectedSeats.map(s => s.backendSeatId).filter(Boolean);
+    if (!seatIds.length) { setHoldLoading(false); return; }
+
+    api.post('/v1/reservations', { seat_ids: seatIds })
+      .then(res => {
+        const id = res?.data?.reservation_id ?? res?.reservation_id;
+        reservationIdRef.current = id;
+        setReservationId(id);
+      })
+      .catch(err => {
+        const msg = err?.response?.data?.detail || '좌석 점유에 실패했습니다. 다른 사용자가 선점했을 수 있습니다.';
+        setHoldError(msg);
+      })
+      .finally(() => setHoldLoading(false));
+
+    return () => {
+      if (!paymentSucceeded.current && reservationIdRef.current) {
+        api.delete(`/v1/reservations/${reservationIdRef.current}`).catch(() => {});
+        reservationIdRef.current = null;
+      }
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleBack = () => {
+    if (reservationIdRef.current) {
+      api.delete(`/v1/reservations/${reservationIdRef.current}`).catch(() => {});
+      reservationIdRef.current = null;
+      setReservationId(null);
+    }
+    onBack();
+  };
+
   const handlePaymentSuccess = (paymentResult) => {
+    paymentSucceeded.current = true;
     onSuccess({
       bookingId: paymentResult.paymentId || `TL-${Date.now().toString(36).toUpperCase()}`,
       eventName: MOCK_EVENT.name,
@@ -28,7 +70,7 @@ export default function PaymentPage({ selectedSeats = [], onSuccess, onBack }) {
         {/* 헤더 */}
         <div style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           <button
-            onClick={onBack}
+            onClick={handleBack}
             style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.25rem', color: '#6B7280', padding: '0.25rem' }}
             aria-label="뒤로가기"
           >
@@ -44,7 +86,6 @@ export default function PaymentPage({ selectedSeats = [], onSuccess, onBack }) {
               예매 정보
             </h2>
 
-            {/* 이벤트 정보 */}
             <div style={{ marginBottom: '1.25rem' }}>
               <div style={{ fontWeight: 700, color: '#111827', marginBottom: '0.25rem' }}>{MOCK_EVENT.name}</div>
               <div style={{ fontSize: '0.875rem', color: '#6B7280' }}>{MOCK_EVENT.date}</div>
@@ -83,7 +124,6 @@ export default function PaymentPage({ selectedSeats = [], onSuccess, onBack }) {
               </span>
             </div>
 
-            {/* 유의사항 */}
             <div style={{ marginTop: '1rem', padding: '0.75rem', background: '#FEF9C3', borderRadius: '0.5rem', fontSize: '0.75rem', color: '#78350F' }}>
               ⚠️ 예매 완료 후 취소 시 수수료가 발생할 수 있습니다.
             </div>
@@ -93,14 +133,15 @@ export default function PaymentPage({ selectedSeats = [], onSuccess, onBack }) {
           <div style={{ background: '#fff', border: '1px solid #E5E7EB', borderRadius: '0.75rem', padding: '1.5rem' }}>
             <PaymentForm
               totalPrice={totalPrice}
-              selectedSeats={selectedSeats}
+              reservationId={reservationId}
+              holdLoading={holdLoading}
+              holdError={holdError}
               onSuccess={handlePaymentSuccess}
             />
           </div>
         </div>
       </div>
 
-      {/* 반응형 모바일 스타일 */}
       <style>{`
         @media (max-width: 768px) {
           div[style*="grid-template-columns"] {

@@ -2,14 +2,20 @@ import React, { useState } from 'react';
 import { STADIUM_GRADES, GRADE_SUB_SECTIONS } from '../../data/stadium-data';
 import '../../styles/components/section-panel.css';
 
-export default function SectionPanel({ selectedGrade, onGradeSelect, onSubSectionClick }) {
+export default function SectionPanel({ selectedGrade, onGradeSelect, onSubSectionClick, liveCounts }) {
+  const getSubAvail = (subId, staticAvail) =>
+    liveCounts != null ? (liveCounts[subId] ?? 0) : staticAvail;
+
+  const getGradeAvail = (grade, subs) =>
+    liveCounts != null
+      ? subs.reduce((sum, sub) => sum + (liveCounts[sub.id] ?? 0), 0)
+      : grade.available;
+
   const handleGradeClick = (grade) => {
-    // 같은 등급 클릭 시 접기
     onGradeSelect(selectedGrade?.id === grade.id ? null : grade);
   };
 
   const handleSubClick = (sub, grade) => {
-    if (sub.available === 0) return;
     onSubSectionClick({
       id: sub.id,
       name: `${sub.id}구역`,
@@ -34,6 +40,7 @@ export default function SectionPanel({ selectedGrade, onGradeSelect, onSubSectio
         {STADIUM_GRADES.map(grade => {
           const isSelected = selectedGrade?.id === grade.id;
           const subs = GRADE_SUB_SECTIONS[grade.id] ?? [];
+          const gradeAvail = getGradeAvail(grade, subs);
 
           return (
             <div key={grade.id} className="grade-item">
@@ -47,29 +54,32 @@ export default function SectionPanel({ selectedGrade, onGradeSelect, onSubSectio
               >
                 <div className="grade-dot" style={{ backgroundColor: grade.color }} />
                 <span className="grade-name">{grade.name}</span>
-                <span className={`grade-count${grade.available > 0 ? ' has-seats' : ''}`}>
-                  {grade.available > 0 ? `${grade.available} 석` : '0 석'}
+                <span className={`grade-count${gradeAvail > 0 ? ' has-seats' : ''}`}>
+                  {gradeAvail > 0 ? `${gradeAvail} 석` : '0 석'}
                 </span>
               </div>
 
               {/* 하위 구역 (펼쳤을 때) */}
               {isSelected && (
                 <div className="sub-list">
-                  {subs.map(sub => (
-                    <div
-                      key={sub.id}
-                      className={`sub-row${sub.available > 0 ? ' clickable' : ''}`}
-                      onClick={() => handleSubClick(sub, grade)}
-                      role={sub.available > 0 ? 'button' : undefined}
-                      tabIndex={sub.available > 0 ? 0 : undefined}
-                      onKeyDown={e => e.key === 'Enter' && handleSubClick(sub, grade)}
-                    >
-                      <span className="sub-id">{sub.id}구역</span>
-                      <span className={`sub-count${sub.available > 0 ? ' has-seats' : ''}`}>
-                        {sub.available > 0 ? `${sub.available} 석` : '0 석'}
-                      </span>
-                    </div>
-                  ))}
+                  {subs.map(sub => {
+                    const subAvail = getSubAvail(sub.id, sub.available);
+                    return (
+                      <div
+                        key={sub.id}
+                        className="sub-row clickable"
+                        onClick={() => handleSubClick(sub, grade)}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={e => e.key === 'Enter' && handleSubClick(sub, grade)}
+                      >
+                        <span className="sub-id">{sub.id}구역</span>
+                        <span className={`sub-count${subAvail > 0 ? ' has-seats' : ''}`}>
+                          {subAvail > 0 ? `${subAvail} 석` : '0 석'}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>

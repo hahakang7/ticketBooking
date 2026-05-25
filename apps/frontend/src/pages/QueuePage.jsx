@@ -1,14 +1,28 @@
-import React, { useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useQueue } from '../hooks/useQueue'
 import QueueStatus from '../components/QueueStatus/QueueStatus'
 import { Loading } from '../components/shared'
+import api from '../services/api'
 
-const EVENT_ID = import.meta.env.VITE_EVENT_ID || 'evt-default'
-const USER_ID = import.meta.env.VITE_USER_ID || 'user-default'
+// 개발용 고정 UUID — seed.py dev 사용자와 일치
+const DEV_USER_ID = '00000000-0000-0000-0000-000000000001'
 
 export default function QueuePage({ onReady }) {
+  const [eventId, setEventId] = useState(null)
+  const userId = import.meta.env.VITE_USER_ID || DEV_USER_ID
+
   const { position, estimatedWaitTime, status, accessToken, loading, error, isConnected, isMock, joinQueue } =
     useQueue()
+
+  // 실제 event_id를 DB에서 조회
+  useEffect(() => {
+    api.get('/v1/events')
+      .then(res => {
+        const items = res?.data?.items ?? res?.items ?? []
+        setEventId(items.length > 0 ? items[0].event_id : 'evt-default')
+      })
+      .catch(() => setEventId('evt-default'))
+  }, [])
 
   useEffect(() => {
     if (status === 'ready' && accessToken) {
@@ -16,8 +30,8 @@ export default function QueuePage({ onReady }) {
     }
   }, [status, accessToken, onReady])
 
-  if (loading) {
-    return <Loading message="대기열 진입 중..." />
+  if (loading || eventId === null) {
+    return <Loading message="초기화 중..." />
   }
 
   if (status === 'idle') {
@@ -30,7 +44,7 @@ export default function QueuePage({ onReady }) {
           <h1>티켓 예매 대기열</h1>
           <p>대기열에 입장하여 좌석을 선택하세요.</p>
           {error && <div className="queue-error">{error}</div>}
-          <button className="btn-primary" onClick={() => joinQueue(EVENT_ID, USER_ID)}>
+          <button className="btn-primary" onClick={() => joinQueue(eventId, userId)}>
             대기열 입장
           </button>
         </div>
@@ -66,13 +80,12 @@ export default function QueuePage({ onReady }) {
     )
   }
 
-  // error
   return (
     <div className="queue-page">
       <div className="queue-error-screen">
         <h2>오류 발생</h2>
         <p>{error || '알 수 없는 오류가 발생했습니다.'}</p>
-        <button className="btn-primary" onClick={() => joinQueue(EVENT_ID, USER_ID)}>
+        <button className="btn-primary" onClick={() => joinQueue(eventId, userId)}>
           다시 시도
         </button>
       </div>

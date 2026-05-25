@@ -23,7 +23,7 @@ function validate(fields) {
   return errors;
 }
 
-export default function PaymentForm({ totalPrice, selectedSeats = [], onSuccess }) {
+export default function PaymentForm({ totalPrice, reservationId, holdLoading, holdError, onSuccess }) {
   const [fields, setFields] = useState({ cardNumber: '', cardHolder: '', expiry: '', cvv: '' });
   const [errors, setErrors] = useState({});
   const [apiError, setApiError] = useState('');
@@ -44,17 +44,10 @@ export default function PaymentForm({ totalPrice, selectedSeats = [], onSuccess 
     const errs = validate(fields);
     if (Object.keys(errs).length) { setErrors(errs); return; }
 
+    if (!reservationId) { setApiError('좌석 점유 정보가 없습니다. 뒤로 가서 다시 시도해주세요.'); return; }
     setLoading(true);
     setApiError('');
     try {
-      const seatIds = selectedSeats.map((s) => s.backendSeatId).filter(Boolean);
-
-      // 1단계: 좌석 hold + 예약 생성
-      const reservationRes = await api.post('/v1/reservations', { seat_ids: seatIds });
-      const reservationId = reservationRes?.data?.reservation_id ?? reservationRes?.reservation_id;
-      if (!reservationId) throw new Error('예약 ID를 받지 못했습니다.');
-
-      // 2단계: 결제 처리
       const paymentRes = await api.post('/v1/payments', {
         reservation_id: reservationId,
         payment_method: 'card',
@@ -71,6 +64,26 @@ export default function PaymentForm({ totalPrice, selectedSeats = [], onSuccess 
       setLoading(false);
     }
   };
+
+  if (holdLoading) {
+    return (
+      <div className="payment-form">
+        <div className="payment-form__title">카드 정보 입력</div>
+        <div style={{ textAlign: 'center', padding: '2rem 0', color: '#6B7280', fontSize: '0.9rem' }}>
+          좌석을 점유하는 중입니다...
+        </div>
+      </div>
+    );
+  }
+
+  if (holdError) {
+    return (
+      <div className="payment-form">
+        <div className="payment-form__title">카드 정보 입력</div>
+        <div className="payment-form__error-banner">{holdError}</div>
+      </div>
+    );
+  }
 
   return (
     <form className="payment-form" onSubmit={handleSubmit} noValidate>

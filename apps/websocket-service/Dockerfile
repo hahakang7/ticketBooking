@@ -1,11 +1,11 @@
 # WebSocket Service Dockerfile
-FROM node:18-alpine
+FROM node:20-alpine
 
 WORKDIR /app
 
-# 의존성 설치
+# 의존성 설치 (lock file 버전 차이 방지를 위해 npm install 사용)
 COPY package*.json ./
-RUN npm ci --only=production && npm cache clean --force
+RUN npm install --omit=dev --no-audit --no-fund && npm cache clean --force
 
 # 소스 코드 복사
 COPY . .

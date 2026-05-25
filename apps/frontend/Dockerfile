@@ -1,18 +1,18 @@
 # Frontend Dockerfile
-FROM node:18-alpine AS builder
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# 의존성 설치
+# 의존성 설치 (lock file 버전 차이 방지를 위해 npm install 사용)
 COPY package*.json ./
-RUN npm ci
+RUN npm install --no-audit --no-fund
 
 # 빌드
 COPY . .
 RUN npm run build
 
 # Production 이미지
-FROM node:18-alpine
+FROM node:20-alpine
 
 WORKDIR /app
 
