@@ -2,7 +2,13 @@ from typing import Optional
 
 import redis as redis_lib
 
-from src.redis.queue import add_to_queue, get_position, get_queue_size, remove_from_queue
+from src.redis.queue import (
+  add_to_queue,
+  consume_from_queue_atomic,
+  get_position,
+  get_queue_size,
+  remove_from_queue,
+)
 from src.services.token_service import TokenService
 
 
@@ -39,9 +45,10 @@ class QueueService:
     return remove_from_queue(self.r, event_id, user_id) > 0
 
   def consume_token(self, user_id: str, event_id: str) -> Optional[str]:
-    """대기 완료: ZREM 후 access_token 발급. 대기열에 없으면 None."""
-    position = get_position(self.r, event_id, user_id)
-    if position is None:
+    """
+    원자적으로 position=1 사용자 consume.
+    성공하면 access_token 발급, 이미 consume됐으면 None.
+    """
+    if not consume_from_queue_atomic(self.r, event_id, user_id):
       return None
-    remove_from_queue(self.r, event_id, user_id)
     return self.token_service.issue_access_token(user_id, event_id)
