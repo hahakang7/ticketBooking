@@ -213,9 +213,9 @@ docs/api-specs/core-api.md          📖 API 명세 (너가 초안, 팀 리뷰)
        ├─ [x] deployment.yaml (이미 존재)
        └─ [x] service.yaml (이미 존재)
 
-[ ] CI/CD 파이프라인 설정
+[x] CI/CD 파이프라인 설정
     └─ 위치: .github/workflows/
-       └─ [ ] ci-core-api.yml 작성 (pytest, flake8) [Week 1 선택사항]
+       └─ [x] ci-core-api.yml 작성 (lint(flake8), test(pytest), build(Docker) 3단계 구성)
 
 [x] 문서 작성
     └─ [x] 완료 문서화 (이미 존재)
@@ -235,6 +235,7 @@ docs/api-specs/core-api.md          📖 API 명세 (너가 초안, 팀 리뷰)
 - Python 파일: 39개
 - Alembic 마이그레이션: 1개 (001_initial_schema.py)
 - 시드 데이터: 3개 JSON 파일 (events, venues, sections)
+- CI/CD 파일: 1개 (ci-core-api.yml)
 
 **구현 내용**
 ```
@@ -288,6 +289,12 @@ docs/api-specs/core-api.md          📖 API 명세 (너가 초안, 팀 리뷰)
   - 2개 공연장
   - 3개 섹션 (A/B/C)
   - seed.py 스크립트
+
+✓ CI/CD 파이프라인
+  - .github/workflows/ci-core-api.yml (GitHub Actions)
+  - lint job: flake8 (max-line-length=100)
+  - test job: pytest (11개 단위 테스트)
+  - build job: Docker 이미지 빌드
 ```
 
 **코드 검증**
@@ -339,6 +346,21 @@ docs/api-specs/core-api.md          📖 API 명세 (너가 초안, 팀 리뷰)
    - services/queue_service.py
    - services/token_service.py (JWT)
    - api/v1/queue.py (/join, /status, /sse)
+
+**코드 품질 개선 (2026-05-25 추가)**
+
+Critical 이슈 6개 수정:
+- `config.py`: secret_key, database_url 기본값 제거 (보안)
+- `error_handler.py`: 내부 에러 메시지 클라이언트 노출 제거
+- `api/v1/events.py`: 404 로직 개선 + limit 검증 추가 (DoS 방지)
+- `dependencies.py`: DB rollback 추가, Authorization 헤더 case-insensitive
+
+Medium 이슈 3개 개선:
+- `config.py`: Pydantic v2 SettingsConfigDict 전환
+- `main.py`: @app.on_event → lifespan 컨텍스트 매니저 전환
+- `models/*.py` (5개): timezone-aware datetime 적용
+
+검증: 11개 단위 테스트 모두 PASS ✅
 
 ---
 
