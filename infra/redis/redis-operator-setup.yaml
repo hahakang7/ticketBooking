@@ -1,0 +1,79 @@
+# Redis Operator 설치 (OT SCSK Redis Operator 기준)
+# 실제 설치는: kubectl apply -f https://operatorhub.io/install/redis-operator.yaml
+# 아래는 네임스페이스와 RBAC 설정
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: redis-operator
+---
+# Redis Operator ServiceAccount
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: redis-operator
+  namespace: redis-operator
+---
+# Redis Operator ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: redis-operator
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "services", "endpoints", "persistentvolumeclaims",
+                "events", "configmaps", "secrets", "serviceaccounts"]
+    verbs: ["*"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "statefulsets"]
+    verbs: ["*"]
+  - apiGroups: ["redis.redis.opstreelabs.in"]
+    resources: ["*"]
+    verbs: ["*"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: redis-operator
+subjects:
+  - kind: ServiceAccount
+    name: redis-operator
+    namespace: redis-operator
+roleRef:
+  kind: ClusterRole
+  name: redis-operator
+  apiGroup: rbac.authorization.k8s.io
+---
+# Redis Operator Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-operator
+  namespace: redis-operator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: redis-operator
+  template:
+    metadata:
+      labels:
+        name: redis-operator
+    spec:
+      serviceAccountName: redis-operator
+      containers:
+        - name: redis-operator
+          image: quay.io/opstree/redis-operator:v0.15.0
+          imagePullPolicy: Always
+          env:
+            - name: WATCH_NAMESPACE
+              value: ""   # 빈 문자열 = 모든 네임스페이스 감시
+            - name: OPERATOR_NAME
+              value: "redis-operator"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
