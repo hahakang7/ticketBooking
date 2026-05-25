@@ -19,7 +19,15 @@
       "PowerShell(cd \"D:\\\\distributeSys\\\\apps\\\\core-api\"; python -m uvicorn src.main:app --reload --port 8000 2>&1 &)",
       "PowerShell(curl *)",
       "PowerShell(Invoke-WebRequest -Uri \"http://localhost:8000/health\" -UseBasicParsing | Select-Object -ExpandProperty Content)",
-      "Bash(python -c \"from src.main import app; print\\('✅ FastAPI app import successful'\\)\")"
+      "Bash(python -c \"from src.main import app; print\\('✅ FastAPI app import successful'\\)\")",
+      "Bash(python -m pytest tests/ -v --tb=short)",
+      "Bash(python -c ' *)",
+      "Bash(docker-compose ps *)",
+      "Bash(docker-compose up *)",
+      "Bash(docker-compose -f docker-compose.api.yml up -d)",
+      "Bash(python -m alembic upgrade head)",
+      "Bash(python -m src.database.seed)",
+      "Bash(python test_integration.py)"
     ]
   }
 }

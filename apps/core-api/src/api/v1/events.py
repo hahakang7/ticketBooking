@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 import uuid
 
@@ -12,7 +12,11 @@ router = APIRouter(prefix="/api/v1/events", tags=["events"])
 
 
 @router.get("", response_model=ApiResponse[EventListResponse])
-async def list_events(page: int = 1, limit: int = 20, db: Session = Depends(get_db)):
+async def list_events(
+  page: int = Query(default=1, ge=1),
+  limit: int = Query(default=20, ge=1, le=100),
+  db: Session = Depends(get_db)
+):
   """이벤트 목록 조회"""
   service = EventService(db)
   events = service.get_events(page, limit)
@@ -33,7 +37,8 @@ async def get_event(event_id: uuid.UUID, db: Session = Depends(get_db)):
 async def get_event_seats(event_id: uuid.UUID, db: Session = Depends(get_db)):
   """이벤트 좌석 조회"""
   service = EventService(db)
-  seats = service.get_seats_by_event(event_id)
-  if not seats:
+  event = service.get_event_by_id(event_id)
+  if not event:
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
-  return ApiResponse(code=200, message="success", data=seats)
+  seats = service.get_seats_by_event(event_id)
+  return ApiResponse(code=200, message="success", data=seats or [])

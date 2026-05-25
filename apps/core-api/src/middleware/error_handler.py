@@ -1,10 +1,12 @@
 from fastapi import Request, status
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
-import json
+import logging
 
 from src.schemas.common import ApiResponse
 from src.exceptions.custom_exceptions import BusinessLogicError
+
+logger = logging.getLogger(__name__)
 
 
 class ErrorHandlerMiddleware(BaseHTTPMiddleware):
@@ -22,11 +24,11 @@ class ErrorHandlerMiddleware(BaseHTTPMiddleware):
         ).model_dump(),
       )
     except Exception as e:
+      logger.error(f"Unhandled exception: {e}", exc_info=True)
       return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content=ApiResponse(
           code=500,
-          message="Internal server error",
-          data={"error": str(e)}
+          message="Internal server error"
         ).model_dump(),
       )

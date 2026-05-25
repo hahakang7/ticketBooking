@@ -12,6 +12,9 @@ def get_db() -> Session:
   db = SessionLocal()
   try:
     yield db
+  except Exception:
+    db.rollback()
+    raise
   finally:
     db.close()
 
@@ -31,12 +34,13 @@ def get_current_user(authorization: str = Header(...)) -> dict:
   Authorization: Bearer <access_token> 검증.
   반환: {"sub": user_id, "event_id": event_id, "type": "access"}
   """
-  if not authorization.startswith("Bearer "):
+  auth_header = authorization.strip()
+  if not auth_header.lower().startswith("bearer "):
     raise HTTPException(
       status_code=status.HTTP_401_UNAUTHORIZED,
       detail="Invalid authorization header format",
     )
-  token = authorization.removeprefix("Bearer ")
+  token = auth_header[7:]
   try:
     payload = decode_token(token)
   except ValueError as e:

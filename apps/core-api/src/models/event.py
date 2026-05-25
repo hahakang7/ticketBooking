@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import Column, String, DateTime, Integer, Index, Text
 from sqlalchemy.dialects.postgresql import UUID
 
@@ -13,11 +13,11 @@ class Event(Base):
   name = Column(String(255), nullable=False)
   description = Column(Text, nullable=True)
   location = Column(String(255), nullable=False)
-  start_at = Column(DateTime, nullable=False)
-  end_at = Column(DateTime, nullable=False)
+  start_at = Column(DateTime(timezone=True), nullable=False)
+  end_at = Column(DateTime(timezone=True), nullable=False)
   total_seats = Column(Integer, nullable=False)
   available_seats = Column(Integer, nullable=False)
-  created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+  created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
 
   __table_args__ = (
     Index("idx_events_start_at", "start_at"),
