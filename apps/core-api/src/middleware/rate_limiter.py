@@ -13,7 +13,7 @@ logger = logging.getLogger("core-api")
 
 # (max_requests, window_seconds) per IP
 RATE_LIMIT_RULES: dict = {
-  "/api/queue/join": (10, 10),  # 10초에 10회 (IP 기반)
+  "/api/queue/join": (1, 1),  # 1초에 1회 (IP 기반) — 티켓팅 봇 방어
 }
 DEFAULT_LIMIT = (60, 60)
 

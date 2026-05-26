@@ -19,7 +19,9 @@ def mock_redis():
 
 @pytest.fixture
 def app_client(mock_redis):
-  with patch("src.redis.client.redis_client", mock_redis):
+  with patch("src.redis.client.redis_client", mock_redis), \
+       patch("src.dependencies.redis_client", mock_redis), \
+       patch("src.middleware.rate_limiter.redis_client", mock_redis):
     from src.main import app
     client = TestClient(app, raise_server_exceptions=False)
     yield client, mock_redis
