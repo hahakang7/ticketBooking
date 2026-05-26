@@ -1,6 +1,8 @@
 import pytest
 from unittest.mock import MagicMock, patch, AsyncMock
 from fastapi.testclient import TestClient
+import fakeredis
+from src.redis.queue import add_to_queue, get_position, consume_from_queue_atomic
 
 
 @pytest.fixture
@@ -212,3 +214,46 @@ class TestTokenAuth:
 
     with pytest.raises(ValueError):
       decode_token("invalid.token.here")
+
+
+class TestQueueIntegration:
+  """fakeredis로 실제 Redis 동작 검증 — Lua 스크립트·Sorted Set 포함"""
+
+  @pytest.fixture
+  def fake_redis(self):
+    return fakeredis.FakeRedis()
+
+  def test_fifo_ordering(self, fake_redis):
+    """timestamp 기반 FIFO 순서 보장"""
+    add_to_queue(fake_redis, "evt-1", "user-A", timestamp=1000.0)
+    add_to_queue(fake_redis, "evt-1", "user-B", timestamp=2000.0)
+    add_to_queue(fake_redis, "evt-1", "user-C", timestamp=3000.0)
+
+    assert get_position(fake_redis, "evt-1", "user-A") == 1
+    assert get_position(fake_redis, "evt-1", "user-B") == 2
+    assert get_position(fake_redis, "evt-1", "user-C") == 3
+
+  def test_lua_position_2_cannot_consume(self, fake_redis):
+    """Lua 스크립트: position=2인 사용자는 consume 실패"""
+    add_to_queue(fake_redis, "evt-1", "user-A", timestamp=1000.0)
+    add_to_queue(fake_redis, "evt-1", "user-B", timestamp=2000.0)
+
+    assert consume_from_queue_atomic(fake_redis, "evt-1", "user-B") is False
+
+  def test_lua_position_1_consumes_and_shifts_queue(self, fake_redis):
+    """Lua 스크립트: position=1 consume 후 다음 사람이 1번이 됨"""
+    add_to_queue(fake_redis, "evt-1", "user-A", timestamp=1000.0)
+    add_to_queue(fake_redis, "evt-1", "user-B", timestamp=2000.0)
+
+    assert consume_from_queue_atomic(fake_redis, "evt-1", "user-A") is True
+    assert get_position(fake_redis, "evt-1", "user-B") == 1
+
+  def test_double_consume_second_fails(self, fake_redis):
+    """같은 사용자가 두 번 consume: 두 번째는 반드시 실패"""
+    add_to_queue(fake_redis, "evt-1", "user-A", timestamp=1000.0)
+
+    first = consume_from_queue_atomic(fake_redis, "evt-1", "user-A")
+    second = consume_from_queue_atomic(fake_redis, "evt-1", "user-A")
+
+    assert first is True
+    assert second is False
