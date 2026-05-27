@@ -9,26 +9,47 @@ const DEV_USER_ID = '00000000-0000-0000-0000-000000000001'
 
 export default function QueuePage({ onReady }) {
   const [eventId, setEventId] = useState(null)
+  const [eventLoadError, setEventLoadError] = useState(false)
   const userId = import.meta.env.VITE_USER_ID || DEV_USER_ID
 
   const { position, estimatedWaitTime, status, accessToken, loading, error, isConnected, isMock, joinQueue } =
     useQueue()
 
-  // 실제 event_id를 DB에서 조회
-  useEffect(() => {
+  const fetchEvent = () => {
+    setEventLoadError(false)
+    setEventId(null)
     api.get('/v1/events')
       .then(res => {
         const items = res?.data?.items ?? res?.items ?? []
-        setEventId(items.length > 0 ? items[0].event_id : 'evt-default')
+        if (items.length > 0) {
+          setEventId(items[0].event_id)
+        } else {
+          setEventLoadError(true)
+        }
       })
-      .catch(() => setEventId('evt-default'))
-  }, [])
+      .catch(() => setEventLoadError(true))
+  }
+
+  // 실제 event_id를 DB에서 조회
+  useEffect(() => { fetchEvent() }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (status === 'ready' && accessToken) {
       onReady?.(accessToken)
     }
   }, [status, accessToken, onReady])
+
+  if (eventLoadError) {
+    return (
+      <div className="queue-page">
+        <div className="queue-error-screen">
+          <h2>이벤트 정보를 불러올 수 없습니다</h2>
+          <p>서버에 연결할 수 없거나 진행 중인 이벤트가 없습니다.</p>
+          <button className="btn-primary" onClick={fetchEvent}>다시 시도</button>
+        </div>
+      </div>
+    )
+  }
 
   if (loading || eventId === null) {
     return <Loading message="초기화 중..." />

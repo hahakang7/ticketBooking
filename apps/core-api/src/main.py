@@ -1,3 +1,4 @@
+import asyncio
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -23,6 +24,55 @@ logger = logging.getLogger("core-api")
 
 settings = get_settings()
 
+# SQLAlchemy 로그는 DEBUG 모드에서만 출력, propagate=False로 이중 출력 방지
+_sql_level = logging.DEBUG if settings.debug else logging.WARNING
+_sa_logger = logging.getLogger("sqlalchemy.engine")
+_sa_logger.setLevel(_sql_level)
+_sa_logger.propagate = False
+
+CLEANUP_INTERVAL_SECONDS = 30
+
+
+def _run_cleanup():
+  """동기 컨텍스트에서 만료된 hold 예약을 정리한다."""
+  from src.database.db import SessionLocal
+  from src.services.reservation_service import ReservationService
+  from sqlalchemy import text
+
+  # 만료된 예약이 있을 때만 세션을 열어 불필요한 BEGIN/ROLLBACK 트랜잭션을 방지
+  check_db = SessionLocal()
+  try:
+    result = check_db.execute(
+      text("SELECT 1 FROM reservations WHERE status='held' AND expires_at < NOW() LIMIT 1")
+    )
+    has_expired = result.fetchone() is not None
+  finally:
+    check_db.rollback()
+    check_db.close()
+
+  if not has_expired:
+    return
+
+  db = SessionLocal()
+  try:
+    service = ReservationService(db, redis_client)
+    released = service.release_expired_holds()
+    if released > 0:
+      logger.info(f"[Cleanup] Released {released} expired seat hold(s)")
+  except Exception as e:
+    logger.error(f"[Cleanup] Failed: {e}")
+  finally:
+    db.rollback()
+    db.close()
+
+
+async def _cleanup_loop():
+  """30초마다 만료된 좌석 hold를 정리하는 백그라운드 태스크."""
+  while True:
+    await asyncio.sleep(CLEANUP_INTERVAL_SECONDS)
+    loop = asyncio.get_event_loop()
+    await loop.run_in_executor(None, _run_cleanup)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -45,7 +95,16 @@ async def lifespan(app: FastAPI):
   except Exception as e:
     logger.error(f"Redis connection failed: {e}")
 
+  cleanup_task = asyncio.create_task(_cleanup_loop())
+  logger.info(f"[Cleanup] Background task started (interval: {CLEANUP_INTERVAL_SECONDS}s)")
+
   yield
+
+  cleanup_task.cancel()
+  try:
+    await cleanup_task
+  except asyncio.CancelledError:
+    pass
 
   logger.info("Application shutdown")
   try:
