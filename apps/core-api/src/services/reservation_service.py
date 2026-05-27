@@ -287,7 +287,7 @@ class ReservationService:
             seat.held_until = None
             self.db.add(seat)
 
-          self.reservation_repo.update_status(fresh.reservation_id, "expired")
+          self.reservation_repo.update_status(fresh.reservation_id, "cancelled")
           self.reservation_repo.commit()
 
           pipe = self.r.pipeline()
