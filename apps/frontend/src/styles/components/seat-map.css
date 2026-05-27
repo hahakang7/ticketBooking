@@ -56,7 +56,7 @@
 .stadium-svg {
   flex: 1;
   width: 100%;
-  height: auto;
+  height: 100%;    /* flex 컨테이너 높이를 채움; auto 는 width 기준 비율로 과도하게 커짐 */
   min-height: 0;
   display: block;
 }

@@ -25,6 +25,9 @@ class Settings(BaseSettings):
   # CORS
   cors_origins: List[str] = ["http://localhost:3001", "http://localhost:5173"]
 
+  # 내부 서비스 간 통신 시크릿 (WebSocket 서비스 → Core API)
+  internal_secret: str = ""
+
   model_config = SettingsConfigDict(env_file=".env", case_sensitive=False)
 
 

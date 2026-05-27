@@ -11,14 +11,13 @@ async function subscribeToSeatUpdates(eventId, seatService) {
   subscribedChannels.add(channel)
   try {
     await redisService.subscribe(channel, (data) => {
-      // 팀원 2가 발행하는 형식: { seat_id, status, held_by, event_id }
+      // core-api 발행 형식: { event_id, seats: [{seat_id, status}], timestamp }
       const targetEventId = data.event_id || eventId
-      seatService.broadcastSeatUpdate(targetEventId, {
-        seatId: data.seat_id,
-        status: data.status,
-        heldBy: data.held_by || null,
-      })
-      logger.debug(`Seat update broadcasted: event=${targetEventId} seat=${data.seat_id} status=${data.status}`)
+      const seats = Array.isArray(data.seats)
+        ? data.seats.map((s) => ({ seatId: s.seat_id, status: s.status }))
+        : [{ seatId: data.seat_id, status: data.status }]
+      seatService.broadcastBatchSeatUpdate(targetEventId, seats)
+      logger.debug(`Seat batch update broadcasted: event=${targetEventId} count=${seats.length}`)
     })
     logger.info(`Subscribed to Redis channel: ${channel}`)
   } catch (err) {

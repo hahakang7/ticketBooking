@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, useMemo } from 'react';
 import {
   MAP_SECTIONS,
   STADIUM_GRADES,
@@ -15,23 +15,21 @@ export default function SeatMap({ selectedGrade, onGradeClick }) {
   const CX = STADIUM_CX;
   const CY = STADIUM_CY;
 
-  // 섹션 fill 색상
-  const getColor = (gradeId, colorOverride) => {
+  const getColor = useCallback((gradeId, colorOverride) => {
     if (colorOverride) return colorOverride;
     return STADIUM_GRADES.find(g => g.id === gradeId)?.color ?? '#555';
-  };
+  }, []);
 
-  // 등급 미선택: 0.88 / 선택된 등급: 1.0 / 나머지: 0.22
-  const getOpacity = (gradeId) => {
+  const getOpacity = useCallback((gradeId) => {
     if (!selectedGrade) return 0.88;
     return gradeId === selectedGrade.id ? 1 : 0.22;
-  };
+  }, [selectedGrade]);
 
-  const handleClick = (id, gradeId) => {
+  const handleClick = useCallback((id, gradeId) => {
     if (!gradeId) return;
     const grade = STADIUM_GRADES.find(g => g.id === gradeId);
-    if (grade) onGradeClick(grade);
-  };
+    if (grade) onGradeClick(grade, id);
+  }, [onGradeClick]);
 
   // 외야 잔디 경계 아크 (8° ~ 172°, large-arc=1, sweep=0)
   const fieldR = 87;

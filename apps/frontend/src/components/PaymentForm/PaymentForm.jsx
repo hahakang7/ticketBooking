@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import api from '../../services/api';
 import './PaymentForm.css';
 
 function formatCardNumber(value) {
@@ -22,7 +23,7 @@ function validate(fields) {
   return errors;
 }
 
-export default function PaymentForm({ totalPrice, onSuccess }) {
+export default function PaymentForm({ totalPrice, reservationId, holdLoading, holdError, onSuccess }) {
   const [fields, setFields] = useState({ cardNumber: '', cardHolder: '', expiry: '', cvv: '' });
   const [errors, setErrors] = useState({});
   const [apiError, setApiError] = useState('');
@@ -43,19 +44,46 @@ export default function PaymentForm({ totalPrice, onSuccess }) {
     const errs = validate(fields);
     if (Object.keys(errs).length) { setErrors(errs); return; }
 
+    if (!reservationId) { setApiError('좌석 점유 정보가 없습니다. 뒤로 가서 다시 시도해주세요.'); return; }
     setLoading(true);
     setApiError('');
     try {
-      // 실제 환경에서는 PCI-compliant 결제 SDK를 통해 처리
-      // 현재는 Team Member 2의 결제 API 구현 대기 중 → mock 처리
-      await new Promise((r) => setTimeout(r, 1800));
-      onSuccess();
-    } catch {
-      setApiError('결제 처리 중 오류가 발생했습니다. 다시 시도해주세요.');
+      const paymentRes = await api.post('/v1/payments', {
+        reservation_id: reservationId,
+        payment_method: 'card',
+        amount: totalPrice,
+      });
+      const paymentId = paymentRes?.data?.payment_id ?? paymentRes?.payment_id;
+      const paidAt = paymentRes?.data?.created_at ?? paymentRes?.created_at ?? new Date().toISOString();
+
+      onSuccess({ paymentId, paidAt });
+    } catch (err) {
+      const msg = err?.response?.data?.detail || err?.message || '결제 처리 중 오류가 발생했습니다.';
+      setApiError(msg);
     } finally {
       setLoading(false);
     }
   };
+
+  if (holdLoading) {
+    return (
+      <div className="payment-form">
+        <div className="payment-form__title">카드 정보 입력</div>
+        <div style={{ textAlign: 'center', padding: '2rem 0', color: '#6B7280', fontSize: '0.9rem' }}>
+          좌석을 점유하는 중입니다...
+        </div>
+      </div>
+    );
+  }
+
+  if (holdError) {
+    return (
+      <div className="payment-form">
+        <div className="payment-form__title">카드 정보 입력</div>
+        <div className="payment-form__error-banner">{holdError}</div>
+      </div>
+    );
+  }
 
   return (
     <form className="payment-form" onSubmit={handleSubmit} noValidate>

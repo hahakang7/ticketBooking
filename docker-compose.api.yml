@@ -12,8 +12,10 @@ services:
     environment:
       DATABASE_URL: postgresql://user:password@postgres:5432/booking_system
       REDIS_URL: redis://redis:6379
-      DEBUG: "true"
+      SECRET_KEY: dev-secret-key-ticket-booking-2026
+      DEBUG: "false"
       LOG_LEVEL: "info"
+      INTERNAL_SECRET: dev-internal-secret-2026
     depends_on:
       postgres:
         condition: service_healthy

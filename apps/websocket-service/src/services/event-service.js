@@ -9,6 +9,13 @@ class EventService {
 
   subscribeToEvent(socket, eventId) {
     const roomName = `event_${eventId}`
+
+    // 이미 구독 중인 경우 무시 (중복 subscribe_event 이벤트 방어)
+    if (socket.rooms.has(roomName)) {
+      logger.debug(`📍 Socket ${socket.id} already subscribed to event ${eventId}, skipping`)
+      return
+    }
+
     socket.join(roomName)
 
     if (!this.eventRooms.has(eventId)) {

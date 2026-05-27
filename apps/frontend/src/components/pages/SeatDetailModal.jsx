@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { getSectionSeats } from '../../data/stadium-data';
 import api from '../../services/api';
 import { useWebSocket } from '../../hooks/useWebSocket';
@@ -34,7 +34,7 @@ function mapToFrontendSeats(apiSeats, sectionId, price) {
     id: `${sectionId}-${i}`,
     backendSeatId: String(s.seat_id),
     sectionId,
-    seatNum: `${s.row}-${s.seat_number}`,
+    seatNum: `${String.fromCharCode(65 + Math.floor(i / COLS))}${(i % COLS) + 1}`,
     row: Math.floor(i / COLS),
     col: i % COLS,
     status: s.status,
@@ -42,11 +42,7 @@ function mapToFrontendSeats(apiSeats, sectionId, price) {
   }));
 }
 
-let cachedSeatsMap = null; // { eventId, bySection: { A: [], B: [], C: [] } }
-
 async function fetchSeatsBySection() {
-  if (cachedSeatsMap) return cachedSeatsMap;
-
   const eventsRes = await api.get('/v1/events');
   const events = eventsRes?.data?.items ?? eventsRes?.items ?? [];
   if (!events.length) throw new Error('이벤트 없음');
@@ -58,8 +54,7 @@ async function fetchSeatsBySection() {
   const bySection = { A: [], B: [], C: [] };
   allSeats.forEach(s => { if (bySection[s.section]) bySection[s.section].push(s); });
 
-  cachedSeatsMap = { eventId, bySection };
-  return cachedSeatsMap;
+  return { eventId, bySection };
 }
 
 export default function SeatDetailModal({ section, onClose, onProceedToPayment }) {
@@ -113,6 +108,31 @@ export default function SeatDetailModal({ section, onClose, onProceedToPayment }
     load();
   }, [section]);
 
+  // 모든 훅은 조건부 return 이전에 선언해야 함 (Rules of Hooks)
+  const handleSeatClick = useCallback((seat) => {
+    if (seat.status !== 'available') return;
+    setSelectedSeats(prev => {
+      const already = prev.some(s => s.id === seat.id);
+      if (already) return prev.filter(s => s.id !== seat.id);
+      if (prev.length >= 4) return prev;
+      return [...prev, seat];
+    });
+  }, []);
+
+  const totalPrice = useMemo(
+    () => selectedSeats.reduce((sum, s) => sum + s.price, 0),
+    [selectedSeats]
+  );
+
+  const rowMap = useMemo(() => {
+    const map = {};
+    seats.forEach(seat => {
+      if (!map[seat.row]) map[seat.row] = [];
+      map[seat.row].push(seat);
+    });
+    return map;
+  }, [seats]);
+
   if (!section) return null;
 
   if (loading) {
@@ -122,25 +142,6 @@ export default function SeatDetailModal({ section, onClose, onProceedToPayment }
       </Modal>
     );
   }
-
-  const handleSeatClick = (seat) => {
-    if (seat.status !== 'available') return;
-    const already = selectedSeats.some(s => s.id === seat.id);
-    if (already) {
-      setSelectedSeats(prev => prev.filter(s => s.id !== seat.id));
-    } else if (selectedSeats.length < 4) {
-      setSelectedSeats(prev => [...prev, seat]);
-    }
-  };
-
-  const totalPrice = selectedSeats.reduce((sum, s) => sum + s.price, 0);
-
-  // 행별로 그룹핑
-  const rowMap = {};
-  seats.forEach(seat => {
-    if (!rowMap[seat.row]) rowMap[seat.row] = [];
-    rowMap[seat.row].push(seat);
-  });
 
   return (
     <Modal
@@ -172,6 +173,7 @@ export default function SeatDetailModal({ section, onClose, onProceedToPayment }
                       key={seat.id}
                       className={`seat-cell ${cls}`}
                       onClick={() => handleSeatClick(seat)}
+                      onTouchEnd={(e) => { e.preventDefault(); handleSeatClick(seat); }}
                       disabled={seat.status !== 'available'}
                       title={`${seat.seatNum} — ${
                         seat.status === 'available' ? '선택가능' :

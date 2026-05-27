@@ -102,15 +102,27 @@ export default function (data) {
     }
 
     if (res.status === 200) {
+      // join 응답에서 queue_token 추출
+      const joinBody = JSON.parse(res.body);
+      const queueToken = joinBody?.data?.queue_token;
+      const authHeaders = {
+        ...headers,
+        'Authorization': `Bearer ${queueToken}`,
+      };
+
       sleep(0.5);
       const statusRes = http.get(
         `${BASE_URL}/api/queue/status?user_id=${userId}&event_id=${eventId}`,
-        { headers }
+        { headers: authHeaders }
       );
       queueStatusDuration.add(Date.now() - startTime - 500);
 
       check(statusRes, {
         '상태 조회 200': (r) => r.status === 200,
+        '상태 조회 position 포함': (r) => {
+          try { return JSON.parse(r.body)?.data?.position !== undefined; }
+          catch { return false; }
+        },
       });
     }
 
@@ -120,13 +132,8 @@ export default function (data) {
 
 // ── 테스트 종료 후 요약 출력 ────────────────────────────────────
 export function teardown(data) {
-  // 테스트 후 생성된 대기열 항목 정리
-  for (let i = 1; i <= 100; i++) {
-    http.del(
-      `${BASE_URL}/api/queue/leave?user_id=load-test-user-${i}&event_id=${data.eventId}`,
-      null,
-      { headers }
-    );
-  }
-  console.log('\n 대기열 정리 완료');
+  // /api/queue/leave 엔드포인트 미구현으로 별도 정리 불필요
+  // Redis TTL에 의해 대기열 항목이 자동 만료됨
+  console.log(`\n 테스트 완료. eventId: ${data.eventId}`);
+  console.log(' 대기열 항목은 Redis TTL로 자동 정리됩니다.');
 }

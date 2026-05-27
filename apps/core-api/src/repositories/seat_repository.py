@@ -11,7 +11,7 @@ class SeatRepository:
 
   def get_by_event_id(self, event_id: uuid.UUID) -> list[Seat]:
     """이벤트의 모든 좌석 조회"""
-    return self.db.query(Seat).filter(Seat.event_id == event_id).all()
+    return self.db.query(Seat).filter(Seat.event_id == event_id).order_by(Seat.section, Seat.row, Seat.seat_number).all()
 
   def get_by_id(self, seat_id: uuid.UUID) -> Seat | None:
     """좌석 단건 조회"""

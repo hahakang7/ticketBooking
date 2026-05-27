@@ -80,6 +80,11 @@
   background: #fff;
   color: #555;
   font-family: inherit;
+  /* 터치 기기: 더블탭 줌 방지, 최소 탭 영역 확보 */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  min-width: 36px;
+  min-height: 36px;
 }
 
 .seat-cell.available {
@@ -104,9 +109,9 @@
 }
 
 .seat-cell.sold {
-  background: #e0e0e0;
-  border-color: #bbb;
-  color: #bbb;
+  background: #9e9e9e;
+  border-color: #757575;
+  color: #fff;
   cursor: not-allowed;
   text-decoration: line-through;
 }
@@ -142,7 +147,7 @@
 }
 .seat-sample.available { background: #e8e8e8; }
 .seat-sample.hold      { background: #f0ad4e; border-color: #d09030; }
-.seat-sample.sold      { background: #e0e0e0; }
+.seat-sample.sold      { background: #9e9e9e; border-color: #757575; }
 .seat-sample.selected  { background: #1e88e5; border-color: #1565c0; }
 
 /* ---- 선택 요약 ---- */
@@ -213,7 +218,16 @@
 
 /* ---- 반응형 ---- */
 @media (max-width: 480px) {
-  .seat-cells { gap: 7px; }
-  .seat-cell  { width: 34px; height: 34px; font-size: 11px; }
-  .seats-grid { padding: 12px; }
+  .seats-grid { padding: 12px 8px; overflow-x: auto; }
+  .seat-cells { gap: 6px; }
+  .seat-cell  { width: 36px; height: 36px; font-size: 11px; min-width: 36px; }
+  .seat-legend { gap: 10px; }
+  .modal-actions { flex-direction: column; }
+  .direction-label { font-size: 11px; }
+}
+
+@media (max-width: 360px) {
+  .seat-cell { width: 32px; height: 32px; min-width: 32px; font-size: 10px; }
+  .seat-cells { gap: 4px; }
+  .row-label { width: 16px; font-size: 10px; }
 }

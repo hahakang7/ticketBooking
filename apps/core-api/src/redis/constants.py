@@ -25,3 +25,8 @@ QUEUE_TTL = 3600      # 1시간
 LOCK_TTL = 300        # 5분
 CACHE_TTL = 600       # 10분
 SEAT_HOLD_TTL = 300   # 5분
+SEAT_CACHE_TTL = 10   # 10초 — 초기 로드 버스트 방어용 (WebSocket이 실시간 업데이트 담당)
+
+# 좌석 목록 캐시
+def CACHE_SEATS_KEY(event_id: str) -> str:
+  return f"cache:seats:{event_id}"

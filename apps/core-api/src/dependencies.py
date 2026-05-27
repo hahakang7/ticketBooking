@@ -1,4 +1,6 @@
-from fastapi import Depends, Header, HTTPException, status
+from typing import Optional
+
+from fastapi import Depends, Header, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from src.database.db import SessionLocal
@@ -56,18 +58,31 @@ def get_current_user(authorization: str = Header(...)) -> dict:
   return payload
 
 
-def get_user_from_queue_token(authorization: str = Header(...)) -> dict:
+def get_user_from_queue_token(
+  authorization: Optional[str] = Header(None),
+  queue_token: Optional[str] = Query(None),
+) -> dict:
   """
-  Authorization: Bearer <queue_token> 검증.
+  Authorization: Bearer <queue_token> 헤더 또는 ?queue_token= 쿼리 파라미터로 검증.
+  EventSource는 커스텀 헤더를 보낼 수 없으므로 쿼리 파라미터도 허용.
   반환: {"sub": user_id, "event_id": event_id, "position": position, "type": "queue"}
   """
-  auth_header = authorization.strip()
-  if not auth_header.lower().startswith("bearer "):
+  token: Optional[str] = None
+  if authorization:
+    auth_header = authorization.strip()
+    if not auth_header.lower().startswith("bearer "):
+      raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Invalid authorization header format",
+      )
+    token = auth_header[7:]
+  elif queue_token:
+    token = queue_token
+  else:
     raise HTTPException(
       status_code=status.HTTP_401_UNAUTHORIZED,
-      detail="Invalid authorization header format",
+      detail="Queue token required (Authorization header or queue_token param)",
     )
-  token = auth_header[7:]
   try:
     payload = decode_token(token)
   except ValueError as e:

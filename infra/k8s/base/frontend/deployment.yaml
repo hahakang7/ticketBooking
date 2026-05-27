@@ -30,7 +30,7 @@ spec:
           value: "https://api.example.com"
         - name: VITE_SOCKET_URL
           value: "https://ws.example.com"
-        
+
         resources:
           requests:
             cpu: 50m
@@ -38,7 +38,7 @@ spec:
           limits:
             cpu: 200m
             memory: 256Mi
-        
+
         livenessProbe:
           httpGet:
             path: /
@@ -47,7 +47,7 @@ spec:
           periodSeconds: 10
           timeoutSeconds: 5
           failureThreshold: 3
-        
+
         readinessProbe:
           httpGet:
             path: /

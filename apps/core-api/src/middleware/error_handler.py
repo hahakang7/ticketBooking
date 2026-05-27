@@ -20,7 +20,17 @@ class ErrorHandlerMiddleware(BaseHTTPMiddleware):
         content=ApiResponse(
           code=409,
           message="Conflict",
-          data={"error": str(e)}
+          data={"error": str(e)},
+        ).model_dump(),
+      )
+    except ValueError as e:
+      # UUID 형식 오류 등 잘못된 입력값 — 500이 아닌 400으로 반환
+      return JSONResponse(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        content=ApiResponse(
+          code=400,
+          message="Bad request",
+          data={"error": str(e)},
         ).model_dump(),
       )
     except Exception as e:
@@ -29,6 +39,6 @@ class ErrorHandlerMiddleware(BaseHTTPMiddleware):
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content=ApiResponse(
           code=500,
-          message="Internal server error"
+          message="Internal server error",
         ).model_dump(),
       )

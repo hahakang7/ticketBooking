@@ -63,7 +63,7 @@ export const useQueue = () => {
     const queueUser = storageService.getQueueUser()
     if (existingToken && queueUser && !IS_MOCK) {
       setStatus('waiting')
-      sseService.connect(queueUser.userId, queueUser.eventId)
+      sseService.connect(queueUser.userId, queueUser.eventId, existingToken)
     }
 
     return () => {
@@ -114,7 +114,7 @@ export const useQueue = () => {
       storageService.setQueueUser(userId, eventId)
       setPosition(inner.position)
       setStatus('waiting')
-      sseService.connect(userId, eventId)
+      sseService.connect(userId, eventId, inner.queue_token)
     } catch (err) {
       const msg = err.response?.data?.message || '대기열 진입에 실패했습니다.'
       setError(msg)
