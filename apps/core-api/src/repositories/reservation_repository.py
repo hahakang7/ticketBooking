@@ -62,6 +62,32 @@ class ReservationRepository:
       .first()
     )
 
+  def get_held_by_user(self, user_id: uuid.UUID) -> List[Reservation]:
+    """특정 유저의 모든 held 예약 조회"""
+    return (
+      self.db.query(Reservation)
+      .filter(
+        and_(
+          Reservation.user_id == user_id,
+          Reservation.status == "held",
+        )
+      )
+      .all()
+    )
+
+  def get_expired_held(self) -> List[Reservation]:
+    """만료 시각이 지난 held 예약 전체 조회"""
+    return (
+      self.db.query(Reservation)
+      .filter(
+        and_(
+          Reservation.status == "held",
+          Reservation.expires_at < datetime.utcnow(),
+        )
+      )
+      .all()
+    )
+
   def update_status(self, reservation_id: uuid.UUID, status: str) -> Optional[Reservation]:
     reservation = self.get_by_id(reservation_id)
     if reservation:

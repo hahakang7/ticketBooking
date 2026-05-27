@@ -12,7 +12,7 @@ from sqlalchemy import and_
 from src.models.seat import Seat
 from src.models.reservation import Reservation
 from src.redis.lock import reservation_lock, LockAcquireError
-from src.redis.constants import SEAT_HOLD_KEY, SEAT_HOLD_TTL
+from src.redis.constants import SEAT_HOLD_KEY, SEAT_HOLD_TTL, CACHE_SEATS_KEY
 from src.repositories.reservation_repository import ReservationRepository
 from src.repositories.seat_repository import SeatRepository
 from src.schemas.reservation_schema import ReservationResponse
@@ -204,6 +204,109 @@ class ReservationService:
 
     return reservation
 
+  def release_expired_holds(self) -> int:
+    """
+    만료된 held 예약을 일괄 해제한다. (백그라운드 정리 작업에서 주기적으로 호출)
+    - expires_at < NOW() 인 held 예약을 찾아 좌석을 available 로 되돌린다.
+    - 각 예약마다 분산 락을 획득해 결제 완료 처리와의 경합을 방지한다.
+    """
+    expired = self.reservation_repo.get_expired_held()
+    if not expired:
+      return 0
+
+    released_count = 0
+    for reservation in expired:
+      event_id = str(reservation.event_id)
+      try:
+        with reservation_lock(self.r, event_id):
+          # 락 획득 후 재조회 — 그 사이 결제 완료됐을 수 있음
+          fresh = self.reservation_repo.get_by_id(reservation.reservation_id)
+          if not fresh or fresh.status != "held":
+            continue
+
+          seats = (
+            self.db.query(Seat)
+            .filter(Seat.seat_id.in_([uuid.UUID(sid) for sid in fresh.seat_ids]))
+            .with_for_update()
+            .all()
+          )
+          for seat in seats:
+            seat.status = "available"
+            seat.held_by = None
+            seat.held_until = None
+            self.db.add(seat)
+
+          self.reservation_repo.update_status(fresh.reservation_id, "cancelled")
+          self.reservation_repo.commit()
+
+          pipe = self.r.pipeline()
+          for seat in seats:
+            pipe.delete(SEAT_HOLD_KEY(event_id, str(seat.seat_id)))
+          pipe.execute()
+
+          self._publish_seat_update(event_id, seats, "available")
+          released_count += len(seats)
+          logger.info(f"Expired reservation {fresh.reservation_id}: released {len(seats)} seats")
+      except Exception as e:
+        logger.error(f"Failed to release reservation {reservation.reservation_id}: {e}")
+        try:
+          self.reservation_repo.rollback()
+        except Exception:
+          pass
+
+    return released_count
+
+  def release_user_holds(self, user_id: str) -> int:
+    """
+    특정 유저의 모든 held 예약을 해제한다.
+    (WebSocket 연결 해제 후 유예 시간이 지났을 때 호출)
+    """
+    user_uuid = uuid.UUID(user_id)
+    reservations = self.reservation_repo.get_held_by_user(user_uuid)
+    if not reservations:
+      return 0
+
+    released_count = 0
+    for reservation in reservations:
+      event_id = str(reservation.event_id)
+      try:
+        with reservation_lock(self.r, event_id):
+          fresh = self.reservation_repo.get_by_id(reservation.reservation_id)
+          if not fresh or fresh.status != "held":
+            continue
+
+          seats = (
+            self.db.query(Seat)
+            .filter(Seat.seat_id.in_([uuid.UUID(sid) for sid in fresh.seat_ids]))
+            .with_for_update()
+            .all()
+          )
+          for seat in seats:
+            seat.status = "available"
+            seat.held_by = None
+            seat.held_until = None
+            self.db.add(seat)
+
+          self.reservation_repo.update_status(fresh.reservation_id, "expired")
+          self.reservation_repo.commit()
+
+          pipe = self.r.pipeline()
+          for seat in seats:
+            pipe.delete(SEAT_HOLD_KEY(event_id, str(seat.seat_id)))
+          pipe.execute()
+
+          self._publish_seat_update(event_id, seats, "available")
+          released_count += len(seats)
+          logger.info(f"Disconnected user {user_id}: released {len(seats)} seats")
+      except Exception as e:
+        logger.error(f"Failed to release holds for user {user_id}: {e}")
+        try:
+          self.reservation_repo.rollback()
+        except Exception:
+          pass
+
+    return released_count
+
   def _publish_seat_update(self, event_id: str, seats: list, new_status: str):
     channel = f"seat_updates:{event_id}"
     message = json.dumps({
@@ -215,6 +318,8 @@ class ReservationService:
       "timestamp": datetime.utcnow().isoformat(),
     })
     try:
+      # 좌석 상태 변경 시 캐시 즉시 무효화
+      self.r.delete(CACHE_SEATS_KEY(event_id))
       self.r.publish(channel, message)
     except Exception as e:
       # Pub/Sub 실패는 예약 실패로 이어지지 않음 (best-effort)

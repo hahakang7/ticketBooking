@@ -15,6 +15,10 @@ export const config = {
   
   // API 서버 설정
   API_BASE_URL: process.env.API_BASE_URL || 'http://localhost:8000',
+
+  // 내부 서비스 간 통신
+  JWT_SECRET: process.env.JWT_SECRET || process.env.SECRET_KEY || '',
+  INTERNAL_SECRET: process.env.INTERNAL_SECRET || '',
   
   // CORS 설정
   CORS_ORIGIN: process.env.CORS_ORIGIN || 'http://localhost:5173',
