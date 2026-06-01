@@ -63,3 +63,6 @@ htmlcov/
 # Kubernetes
 .kubeconfig
 kubeconfig
+
+# Documents (협의 항목 제외)
+# documents/m2/COLLABORATION_NEEDED.md는 추적 필요

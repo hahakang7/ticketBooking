@@ -205,6 +205,31 @@ class TestQueueAPI:
     )
     assert response.status_code == 403
 
+  def test_get_sse_without_auth(self, app_client):
+    """queue_token 없이 SSE 접근 → 401"""
+    logger.info("GET /api/queue/sse: 토큰 없이 접근 → 401 반환 확인")
+    client, mock_redis = app_client
+    response = client.get("/api/queue/sse?user_id=u1&event_id=e1")
+    assert response.status_code == 401
+
+  def test_get_sse_streaming_headers(self, app_client):
+    """SSE 엔드포인트 응답 헤더 검증"""
+    logger.info("GET /api/queue/sse: Content-Type, Cache-Control, X-Accel-Buffering 헤더 검증")
+    from src.auth.token import create_queue_token
+
+    client, mock_redis = app_client
+    token = create_queue_token("u1", "e1", 2)
+    mock_redis.zrank.return_value = 1
+    mock_redis.zcard.return_value = 5
+
+    response = client.get(
+      "/api/queue/sse?user_id=u1&event_id=e1",
+      headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 200
+    assert "text/event-stream" in response.headers.get("content-type", "")
+    assert response.headers.get("cache-control") == "no-cache"
+
 
 class TestTokenAuth:
   def test_create_and_decode_queue_token(self):
