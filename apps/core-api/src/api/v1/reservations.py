@@ -1,9 +1,12 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Header, HTTPException, status
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
+from typing import Optional
 import uuid
 
 import redis as redis_lib
 
+from src.config import get_settings
 from src.dependencies import get_db, get_redis, get_current_user
 from src.services.reservation_service import ReservationService
 from src.schemas.common import ApiResponse
@@ -55,3 +58,25 @@ async def cancel_reservation(
 ):
   result = service.cancel_reservation(reservation_id, user["sub"])
   return ApiResponse(code=200, message="Reservation cancelled", data=result)
+
+
+class ReleaseUserRequest(BaseModel):
+  user_id: str
+
+
+@router.post("/internal/release-user", status_code=status.HTTP_200_OK, include_in_schema=False)
+async def release_user_holds_internal(
+  body: ReleaseUserRequest,
+  x_internal_secret: Optional[str] = Header(None),
+  service: ReservationService = Depends(get_reservation_service),
+):
+  """
+  내부 전용 엔드포인트: WebSocket 서비스가 사용자 연결 해제 후 hold를 풀 때 호출.
+  X-Internal-Secret 헤더로 인증한다.
+  """
+  settings = get_settings()
+  if not settings.internal_secret or x_internal_secret != settings.internal_secret:
+    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
+
+  released = service.release_user_holds(body.user_id)
+  return {"released_seats": released, "user_id": body.user_id}

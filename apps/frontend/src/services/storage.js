@@ -1,10 +1,16 @@
-function decodeJwtExp(token) {
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+function decodeJwtPayload(token) {
   try {
-    const payload = JSON.parse(atob(token.split('.')[1]))
-    return payload.exp ? payload.exp * 1000 : null
+    return JSON.parse(atob(token.split('.')[1]))
   } catch {
     return null
   }
+}
+
+function decodeJwtExp(token) {
+  const payload = decodeJwtPayload(token)
+  return payload?.exp ? payload.exp * 1000 : null
 }
 
 class StorageService {
@@ -15,8 +21,14 @@ class StorageService {
   getAccessToken() {
     const token = localStorage.getItem('access_token')
     if (!token) return null
-    const expMs = decodeJwtExp(token)
-    if (expMs && Date.now() >= expMs) {
+    const payload = decodeJwtPayload(token)
+    // 만료 검사
+    if (payload?.exp && Date.now() >= payload.exp * 1000) {
+      this.removeAccessToken()
+      return null
+    }
+    // event_id가 유효한 UUID가 아니면 오염된 토큰으로 간주하고 제거
+    if (payload?.event_id && !UUID_RE.test(payload.event_id)) {
       this.removeAccessToken()
       return null
     }

@@ -29,7 +29,15 @@ export default function PaymentPage({ selectedSeats = [], onSuccess, onBack }) {
         setReservationId(id);
       })
       .catch(err => {
-        const msg = err?.response?.data?.detail || '좌석 점유에 실패했습니다. 다른 사용자가 선점했을 수 있습니다.';
+        const httpStatus = err?.response?.status;
+        let msg;
+        if (httpStatus === 409) {
+          msg = '좌석 점유에 실패했습니다. 다른 사용자가 선점했을 수 있습니다.';
+        } else if (httpStatus === 400 || httpStatus === 401) {
+          msg = '세션이 만료되었습니다. 처음부터 다시 시도해 주세요.';
+        } else {
+          msg = err?.response?.data?.message || err?.response?.data?.detail || '좌석 점유 중 오류가 발생했습니다.';
+        }
         setHoldError(msg);
       })
       .finally(() => setHoldLoading(false));
