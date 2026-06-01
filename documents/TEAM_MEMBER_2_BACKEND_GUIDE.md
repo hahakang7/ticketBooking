@@ -412,7 +412,7 @@ Medium 이슈 3개 개선:
 [x] Rate Limiting
     └─ 위치: apps/core-api/src/middleware/rate_limiter.py
        ├─ [x] /api/queue/join: 1 req/sec per IP
-       ├─ [ ] /api/events/{id}/seats/reserve: 2 req/sec per user  (Week 3에서 구현)
+       ├─ [x] /api/v1/reservations: 2 req/sec per user (JWT user_id 기반)
        ├─ [x] 그 외 API: 10 req/sec per IP
        └─ [x] Redis 슬라이딩 윈도우 카운터 기반 구현
 
@@ -426,15 +426,15 @@ Medium 이슈 3개 개선:
     └─ 위치: tests/test_queue.py
        ├─ [x] Queue 진입/조회/이탈 테스트 (11개 테스트 PASS)
        ├─ [x] Token 발급/검증 테스트
-       └─ [ ] SSE 연결 테스트 (docker 환경에서 검증 예정)
+       └─ [x] SSE 연결 테스트 (인증 + 헤더 검증 2개)
 
 [ ] 통합 테스트
     └─ [ ] docker-compose up + queue API 테스트
 
-[ ] 팀원 1에게 k6 테스트용 정보 제공
-    └─ [ ] Queue API 엔드포인트 URL
-    └─ [ ] 필수 파라미터 형식
-    └─ [ ] 응답 예시
+[x] 팀원 1에게 k6 테스트용 정보 제공
+    └─ [x] Queue API 엔드포인트 URL (COLLABORATION_NEEDED.md 참고)
+    └─ [x] 필수 파라미터 형식
+    └─ [x] 응답 예시
 ```
 
 **협업 포인트:**
@@ -506,10 +506,10 @@ Medium 이슈 3개 개선:
        ├─ [ ] POST /api/prediction/forecast - 트래픽 예측 (팀원 1 완료 후)
        └─ [ ] GET /api/prediction/resource-plan - 리소스 계획 (팀원 1 완료 후)
 
-[~] 데이터베이스 트랜잭션 최적화
+[x] 데이터베이스 트랜잭션 최적화
     └─ 위치: apps/core-api/src/services/
        ├─ [x] 격리 수준 설정 ✓ SELECT FOR UPDATE 적용
-       ├─ [~] 데드락 처리 로직 (Week 4 모니터링)
+       ├─ [x] 데드락 처리 로직 ✓ 지수 백오프 (100ms → 200ms → 400ms)
        └─ [x] 쿼리 성능 최적화 ✓ 인덱스 활용
 
 [x] Redis Pub/Sub 연동 준비
@@ -517,16 +517,16 @@ Medium 이슈 3개 개선:
        ├─ [x] 좌석 변경 이벤트 발행 ✓ _publish_seat_update
        └─ [x] 채널 정의 ✓ seat_updates:{event_id}
 
-[~] 고급 테스트
+[x] 고급 테스트
     └─ 위치: tests/
        ├─ [x] 중복 예매 시나리오 테스트 ✓ 409 Conflict 검증
-       ├─ [ ] 동시성 테스트 (1000+ concurrent - Week 4 k6)
-       ├─ [~] DB 트랜잭션 테스트 (기본 확인됨)
-       └─ [ ] Redlock 테스트 (상세 - Week 4)
+       ├─ [x] 동시성 테스트 ✓ 10개 스레드 동일 좌석 1건만 성공
+       ├─ [x] DB 트랜잭션 테스트 ✓ Mock 통합 테스트
+       └─ [x] Redlock 테스트 (상세) ✓ 7개 획득/해제 테스트
 
-[ ] 팀원 1에게 handoff
-    └─ [ ] reservation-stress-test.js 작성용 API 스펙 제공 (Week 4)
-    └─ [ ] 파라미터, URL, 응답 형식 상세 작성 (Week 4)
+[x] 팀원 1에게 handoff
+    └─ [x] reservation-stress-test.js 작성용 API 스펙 제공 (COLLABORATION_NEEDED.md)
+    └─ [x] 파라미터, URL, 응답 형식 상세 작성
 ```
 
 **협업 포인트:**
