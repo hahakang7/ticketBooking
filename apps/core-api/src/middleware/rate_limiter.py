@@ -14,10 +14,10 @@ logger = logging.getLogger("core-api")
 # (max_requests, window_seconds, rate_limit_type)
 # rate_limit_type: "ip" (IP 기반) 또는 "user" (사용자 기반)
 RATE_LIMIT_RULES: dict = {
-  "/api/queue/join": (1, 1, "ip"),  # 1초에 1회 (IP 기반) — 티켓팅 봇 방어
-  "/api/v1/reservations": (2, 1, "user"),  # 1초에 2회 (사용자 기반) — 좌석 선점 방어
+  "/api/queue/join": (3, 1, "ip"),  # 3회/초 (IP 기반) — 티켓팅 봇 방어 & 정상 유저 UX
+  "/api/v1/reservations": (2, 1, "user"),  # 2회/초 (사용자 기반) — 좌석 중복 선점 방어
 }
-DEFAULT_LIMIT = (60, 60, "ip")
+DEFAULT_LIMIT = (5, 1, "ip")  # 5회/초 (IP 기반) — 일반 API 조회 허용
 
 
 class RateLimiterMiddleware(BaseHTTPMiddleware):
