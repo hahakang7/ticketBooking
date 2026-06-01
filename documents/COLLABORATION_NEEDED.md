@@ -53,7 +53,8 @@ Response (200 OK):
   "message": "success",
   "data": {
     "position": 5,
-    "total": 500
+    "total": 500,
+    "is_in_queue": true
   }
 }
 
@@ -63,6 +64,31 @@ Response (401 Unauthorized):
   "message": "Invalid or expired token"
 }
 ```
+
+**GET /api/queue/sse?user_id=user-123&event_id=event-456**
+```
+실시간 대기 순번 스트림 (SSE). 팀원 3 대기 UI에서 사용.
+
+Request Header (또는 쿼리 파라미터로도 전달 가능: ?queue_token=...):
+Authorization: Bearer <queue_token>
+
+Response:
+- Content-Type: text/event-stream
+- 2초 간격으로 현재 순번을 push
+
+스트림 메시지 형식 (3종):
+
+1) 대기 중:
+data: {"status": "waiting", "position": 5, "total": 500}
+
+2) 호출됨 (순번 1 도달 → access_token 발급 후 스트림 종료):
+data: {"status": "ready", "position": 0, "total": 500, "access_token": "eyJhbGciOiJIUzI1Ni...."}
+
+3) 대기열 이탈 (순번 없음 → 스트림 종료):
+data: {"status": "not_in_queue", "position": null, "total": 500}
+```
+
+> **중요:** Reservation/Payment 호출에 필요한 `access_token`은 위 SSE의 `ready` 이벤트에서 발급됩니다. 클라이언트는 `status: "ready"`를 받으면 `access_token`을 저장해 이후 예약/결제 요청의 `Authorization: Bearer` 헤더로 사용합니다.
 
 #### Rate Limiting 규칙
 - **경로:** `/api/queue/join`
@@ -147,8 +173,33 @@ Response (200 OK):
     "reservation_id": "res-789",
     "user_id": "user-123",
     "event_id": "event-456",
-    "seat_ids": ["A1", "A2", "A3"],
+    "seat_ids": ["550e8400-e29b-41d4-a716-446655440000", "550e8400-e29b-41d4-a716-446655440001"],
     "status": "held",
+    "total_price": 300000.00,
+    "created_at": "2026-06-01T10:30:00Z",
+    "expires_at": "2026-06-01T10:35:00Z"
+  }
+}
+```
+
+**DELETE /api/v1/reservations/{reservation_id}**
+```
+예약 취소 (held 상태인 본인 예약만 취소 가능). 좌석은 available로 복귀.
+
+Request Header:
+Authorization: Bearer <access_token>
+
+Response (200 OK):
+{
+  "code": 200,
+  "message": "Reservation cancelled",
+  "data": {
+    "reservation_id": "res-789",
+    "user_id": "user-123",
+    "event_id": "event-456",
+    "seat_ids": ["550e8400-e29b-41d4-a716-446655440000"],
+    "status": "cancelled",
+    "total_price": 150000.00,
     "created_at": "2026-06-01T10:30:00Z",
     "expires_at": "2026-06-01T10:35:00Z"
   }
@@ -237,6 +288,8 @@ HAVING COUNT(*) > 1;
 
 ### 2. 팀원 1과: 예측 모델 API 연동 협의
 
+> ⚠️ **현재 미구현** — `apps/core-api/src/prediction/` 디렉토리만 존재하고 모듈은 비어 있습니다. 팀원 1의 모듈(`traffic_forecaster.py` / `resource_calculator.py`) 제공 대기 중이며, 제공 후 아래 엔드포인트로 API 래핑 예정입니다.
+
 **팀원 1의 작업 항목:**
 - `apps/core-api/src/prediction/traffic_forecaster.py` 구현 (트래픽 예측 모델)
 - `apps/core-api/src/prediction/resource_calculator.py` 구현 (리소스 계획)
@@ -276,20 +329,22 @@ seat_updates:{event_id}
   "seats": [
     {
       "seat_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-      "status": "held"
+      "status": "hold"
     },
     {
       "seat_id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
-      "status": "held"
+      "status": "hold"
     }
   ],
   "timestamp": "2026-06-01T10:31:00.123456Z"
 }
 ```
 
-**발행 시점:**
+> **좌석 status 값:** `available` | `hold` | `sold` 3종입니다. 이는 `GET /api/v1/seats/{event_id}` 응답의 좌석 status 값과 동일하므로, 클라이언트는 초기 좌석 목록과 Pub/Sub 업데이트를 같은 enum으로 처리하면 됩니다. (예약 보류는 좌석 status `hold`이며, 예약 엔티티 status인 `held`와는 다른 값입니다.)
+
+**발행 시점 (총 5가지):**
 1. `POST /api/v1/reservations` 성공 후
-   - status: "held"
+   - status: "hold"
 
 2. `DELETE /api/v1/reservations/{id}` 취소 후
    - status: "available"
@@ -297,7 +352,45 @@ seat_updates:{event_id}
 3. `POST /api/v1/payments` 결제 완료 후
    - status: "sold"
 
+4. **만료된 hold 자동 해제** (백그라운드 정리 작업, hold TTL 경과 시)
+   - status: "available"
+
+5. **사용자 연결 해제 후 hold 해제** (아래 internal 엔드포인트 호출 시)
+   - status: "available"
+
+> **팀원 3 참고:** 동일 채널(`seat_updates:{event_id}`)에서 위 5가지 트리거로 메시지가 발행됩니다. 특히 `available`은 취소(2)·만료(4)·연결 해제(5) 세 경로에서 모두 올 수 있으므로, 클라이언트는 status 값만으로 좌석 UI를 갱신하면 됩니다.
+
 **주의:** 좌석 정보는 `seats[]` 배열로 묶여 단일 메시지로 발행됩니다. 메시지에는 seat_id와 status만 포함되며, held_by/held_until 필드는 없습니다.
+
+#### 내부 전용 엔드포인트: WebSocket 서비스가 호출
+
+**POST /api/v1/reservations/internal/release-user**
+```
+용도: WebSocket 서비스가 사용자 연결 해제(유예 시간 경과)를 감지하면,
+     해당 유저의 모든 held 예약을 풀기 위해 호출합니다.
+     실행 시 해제된 좌석들이 위 채널로 status="available" 발행됩니다.
+
+Request Header:
+X-Internal-Secret: <settings.internal_secret 값과 일치해야 함>
+
+Request:
+{
+  "user_id": "550e8400-e29b-41d4-a716-446655440000"
+}
+
+Response (200 OK):
+{
+  "released_seats": 2,
+  "user_id": "550e8400-e29b-41d4-a716-446655440000"
+}
+
+Response (403 Forbidden - secret 불일치):
+{
+  "detail": "Forbidden"
+}
+```
+
+> **협의 필요:** `INTERNAL_SECRET` 환경변수 값을 팀원 2/3가 동일하게 공유해야 합니다.
 
 **협의 내용:**
 1. 메시지 형식 확인 (추가 필드 필요 여부)
