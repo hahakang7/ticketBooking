@@ -66,7 +66,8 @@ Response (401 Unauthorized):
 
 #### Rate Limiting 규칙
 - **경로:** `/api/queue/join`
-- **제한:** 1회/1초 (IP 기반)
+- **제한:** 3회/1초 (IP 기반)
+- **기본 제한:** 5회/1초 (IP 기반, 조회 API 등)
 - **429 응답 포함:** `retry_after` 필드 (초 단위)
 
 #### k6 테스트 시나리오 추천
@@ -91,26 +92,27 @@ Response (401 Unauthorized):
 #### Reservation API 엔드포인트
 
 **POST /api/v1/reservations**
-```json
+```
 Request Header:
 Authorization: Bearer <access_token>
 
-Request:
+Request (seat_ids는 UUID 배열, event_id는 JWT 클레임에서 추출):
 {
-  "event_id": "event-456",
-  "seat_ids": ["A1", "A2", "A3"]
+  "seat_ids": ["550e8400-e29b-41d4-a716-446655440000", "550e8400-e29b-41d4-a716-446655440001"]
 }
 
 Response (201 Created):
 {
   "code": 201,
-  "message": "success",
+  "message": "Seats held successfully",
   "data": {
     "reservation_id": "res-789",
     "user_id": "user-123",
     "event_id": "event-456",
-    "seat_ids": ["A1", "A2", "A3"],
+    "seat_ids": ["550e8400-e29b-41d4-a716-446655440000", "550e8400-e29b-41d4-a716-446655440001"],
     "status": "held",
+    "total_price": 300000.00,
+    "created_at": "2026-06-01T10:30:00Z",
     "expires_at": "2026-06-01T10:35:00Z"
   }
 }
@@ -154,36 +156,38 @@ Response (200 OK):
 ```
 
 **POST /api/v1/payments**
-```json
+```
 Request Header:
 Authorization: Bearer <access_token>
 
-Request:
+Request (payment_method: "card" 또는 "bank_transfer"):
 {
   "reservation_id": "res-789",
-  "amount": 150000.00,
-  "payment_method": "credit_card"
+  "amount": 300000.00,
+  "payment_method": "card"
 }
 
 Response (201 Created):
 {
   "code": 201,
-  "message": "success",
+  "message": "Payment processed",
   "data": {
     "payment_id": "pay-101",
     "reservation_id": "res-789",
     "user_id": "user-123",
-    "amount": 150000.00,
+    "amount": 300000.00,
     "status": "completed",
+    "payment_method": "card",
     "created_at": "2026-06-01T10:31:00Z"
   }
 }
 ```
 
 #### Rate Limiting 규칙
-- **경로:** `/api/v1/reservations`
-- **제한:** 2회/1초 (사용자 기반)
-- **인증 방식:** Authorization 헤더에서 user_id 추출 (JWT access_token)
+- **`/api/queue/join`:** 3회/1초 (IP 기반)
+- **`/api/v1/reservations`:** 2회/1초 (사용자 기반, JWT access_token에서 user_id 추출)
+- **기본 제한 (조회 API):** 5회/1초 (IP 기반)
+- **429 응답:** `{"code": 429, "message": "Too Many Requests", "data": {"retry_after": 1}}`
 
 #### k6 테스트 시나리오 추천
 
@@ -265,14 +269,20 @@ seat_updates:{event_id}
 예시: seat_updates:event-456
 ```
 
-**메시지 형식 (JSON):**
-```json
+**메시지 형식 (JSON, 여러 좌석을 배열로 묶어 일괄 발행):**
+```
 {
-  "seat_id": "A1",
-  "status": "sold",
-  "held_by": "user-123",
-  "held_until": "2026-06-01T10:35:00Z",
   "event_id": "event-456",
+  "seats": [
+    {
+      "seat_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "status": "held"
+    },
+    {
+      "seat_id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+      "status": "held"
+    }
+  ],
   "timestamp": "2026-06-01T10:31:00.123456Z"
 }
 ```
@@ -280,17 +290,14 @@ seat_updates:{event_id}
 **발행 시점:**
 1. `POST /api/v1/reservations` 성공 후
    - status: "held"
-   - held_until: 예약 만료 시간
 
 2. `DELETE /api/v1/reservations/{id}` 취소 후
    - status: "available"
-   - held_by: null
-   - held_until: null
 
 3. `POST /api/v1/payments` 결제 완료 후
    - status: "sold"
-   - held_by: user_id (최종 소유자)
-   - held_until: null
+
+**주의:** 좌석 정보는 `seats[]` 배열로 묶여 단일 메시지로 발행됩니다. 메시지에는 seat_id와 status만 포함되며, held_by/held_until 필드는 없습니다.
 
 **협의 내용:**
 1. 메시지 형식 확인 (추가 필드 필요 여부)
