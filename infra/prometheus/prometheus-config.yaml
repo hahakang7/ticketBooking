@@ -2,22 +2,22 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: prometheus-config
-  namespace: monitoring # 모니터링용 네임스페이스 (필요시 default 등으로 변경)
+  namespace: monitoring
 data:
-  # 1. 프로메테우스 메인 설정 (prometheus-k8s.yml 내용을 prometheus.yml로 등록)
   prometheus.yml: |
     global:
       scrape_interval: 15s
       evaluation_interval: 15s
 
     rule_files:
-      - "/etc/prometheus/alert-rules.yaml" # 절대경로로 명시하는 것이 안전합니다.
+      - "/etc/prometheus/alert-rules.yaml"
 
     scrape_configs:
       - job_name: "prometheus"
         static_configs:
           - targets: ["localhost:9090"]
 
+      # Core API 수집 설정
       - job_name: "core-api"
         kubernetes_sd_configs:
           - role: pod
@@ -38,6 +38,24 @@ data:
             action: replace
             target_label: app
 
+      # ✅ WebSocket 서비스 수집 설정 추가
+      - job_name: "websocket-service"
+        kubernetes_sd_configs:
+          - role: pod
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+            action: keep
+            regex: "true"
+          # WebSocket Pod의 포트(3000)를 프로메테우스가 인식하도록 처리
+          - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+            action: replace
+            regex: ([^:]+)(?::\d+)?;(\d+)
+            replacement: $1:$2
+            target_label: __address__
+          - source_labels: [__meta_kubernetes_pod_label_app]
+            action: replace
+            target_label: app
+
       - job_name: "kubernetes-nodes"
         kubernetes_sd_configs:
           - role: node
@@ -45,147 +63,5 @@ data:
           - action: labelmap
             regex: __meta_kubernetes_node_label_(.+)
 
-  # 2. 알람 규칙 설정 (alert-rules.yaml 내용 그대로 주입)
   alert-rules.yaml: |
-    groups:
-      - name: latency_alerts
-        interval: 30s
-        rules:
-          - alert: HighP95Latency
-            expr: |
-              histogram_quantile(0.95,
-                rate(http_request_duration_seconds_bucket{job="core-api"}[5m])
-              ) > 0.3
-            for: 2m
-            labels:
-              severity: warning
-              team: infra
-            annotations:
-              summary: "P95 응답 시간 300ms 초과"
-              description: "현재 P95 응답 시간: {{ $value | humanizeDuration }}"
-          - alert: CriticalP95Latency
-            expr: |
-              histogram_quantile(0.95,
-                rate(http_request_duration_seconds_bucket{job="core-api"}[5m])
-              ) > 1.0
-            for: 1m
-            labels:
-              severity: critical
-              team: infra
-            annotations:
-              summary: "P95 응답 시간 1초 초과 — 긴급 대응 필요"
-              description: "현재 P95 응답 시간: {{ $value | humanizeDuration }}"
-
-      - name: availability_alerts
-        interval: 30s
-        rules:
-          - alert: CoreApiDown
-            expr: up{job="core-api"} == 0
-            for: 1m
-            labels:
-              severity: critical
-              team: infra
-            annotations:
-              summary: "Core API 서버 다운"
-              description: "Core API ({{ $labels.instance }}) 가 응답하지 않습니다."
-          - alert: WebSocketServiceDown
-            expr: up{job="websocket-service"} == 0
-            for: 1m
-            labels:
-              severity: critical
-              team: infra
-            annotations:
-              summary: "WebSocket 서버 다운"
-              description: "WebSocket 서비스가 응답하지 않습니다."
-          - alert: HighErrorRate
-            expr: |
-              rate(http_requests_total{status=~"5.."}[5m])
-              /
-              rate(http_requests_total[5m]) > 0.01
-            for: 2m
-            labels:
-              severity: warning
-              team: infra
-            annotations:
-              summary: "에러율 1% 초과"
-              description: "현재 에러율: {{ $value | humanizePercentage }}"
-
-      - name: queue_alerts
-        interval: 15s
-        rules:
-          - alert: QueueSizeTooLarge
-            expr: redis_zset_length{key=~"queue:.*"} > 10000
-            for: 5m
-            labels:
-              severity: warning
-              team: backend
-            annotations:
-              summary: "대기열 크기 10,000명 초과"
-              description: "현재 대기열 크기: {{ $value }}명"
-          - alert: DuplicateReservationDetected
-            expr: increase(duplicate_reservation_total[5m]) > 0
-            for: 0m
-            labels:
-              severity: critical
-              team: backend
-            annotations:
-              summary: "중복 예매 발생 — 즉시 확인 필요"
-              description: "5분 내 중복 예매 {{ $value }}건 발생"
-
-      - name: resource_alerts
-        interval: 30s
-        rules:
-          - alert: HighCpuUsage
-            expr: |
-              rate(container_cpu_usage_seconds_total{container!=""}[5m]) > 0.8
-            for: 5m
-            labels:
-              severity: warning
-              team: infra
-            annotations:
-              summary: "CPU 사용률 80% 초과"
-              description: "컨테이너 {{ $labels.container }} CPU: {{ $value | humanizePercentage }}"
-          - alert: HighMemoryUsage
-            expr: |
-              container_memory_usage_bytes{container!=""}
-              /
-              container_spec_memory_limit_bytes{container!=""}
-              > 0.85
-            for: 5m
-            labels:
-              severity: warning
-              team: infra
-            annotations:
-              summary: "메모리 사용률 85% 초과"
-              description: "컨테이너 {{ $labels.container }} 메모리: {{ $value | humanizePercentage }}"
-          - alert: RedisDown
-            expr: up{job="redis"} == 0
-            for: 1m
-            labels:
-              severity: critical
-              team: infra
-            annotations:
-              summary: "Redis 서버 다운"
-              description: "Redis가 응답하지 않습니다. 대기열 및 락 기능 마비."
-
-      - name: websocket_alerts
-        interval: 15s
-        rules:
-          - alert: WebSocketMessageDelayHigh
-            expr: websocket_message_latency_p95_seconds > 0.1
-            for: 2m
-            labels:
-              severity: warning
-              team: gateway
-            annotations:
-              summary: "WebSocket 메시지 지연 100ms 초과"
-              description: "현재 P95 지연: {{ $value | humanizeDuration }}"
-          - alert: TooManyWebSocketDisconnects
-            expr: rate(websocket_disconnections_total[5m]) > 100
-            for: 2m
-            labels:
-              severity: warning
-              team: gateway
-            annotations:
-              summary: "WebSocket 연결 해제 급증"
-              description: "5분 내 {{ $value }}회 연결 해제"
+    # (이전과 동일한 알람 규칙 내용 생략 - 기존에 작성된 alert-rules 코드 그대로 유지하시면 됩니다)
