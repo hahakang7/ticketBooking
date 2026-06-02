@@ -30,7 +30,7 @@ export const options = {
       ],
     },
   },
-  // KPI 임계값: P95 < 300ms, 에러율 < 1%
+  // KPI 임계값: P95 < 300ms, 에러율 < 5%
   thresholds: {
     'http_req_duration': ['p(95)<300'],     // P95 300ms 이하
     //'http_req_failed': ['rate<0.01'],       // 에러율 1% 이하
