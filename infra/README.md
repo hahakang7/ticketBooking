@@ -17,7 +17,7 @@ infra/
 
 ### 1. 기본 리소스 배포
 ```bash
-kubectl apply -f k8s/base/
+kubectl apply -f k8s/base/ -R
 ```
 
 ### 2. 자동 스케일링 설정
@@ -49,9 +49,8 @@ kubectl apply -f redis/
 - `hpa.yaml`: Pod 자동 스케일링 설정
 
 ### prometheus/
-- `prometheus-deployment.yaml`: Prometheus 배포
-- `alert-rules.yaml`: 알람 규칙
-- `service-monitor.yaml`: 메트릭 수집 설정
+prometheus-config.yaml      # 설정 및 알람 규칙 통합본
+prometheus-deployment.yaml  # 프로메테우스 서버 및 서비스 배포본
 
 ### redis/
 - `redis-operator-setup.yaml`: Redis Operator 설치

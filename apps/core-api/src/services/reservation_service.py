@@ -9,6 +9,7 @@ import redis as redis_lib
 from sqlalchemy.orm import Session
 from sqlalchemy import and_
 
+from src.metrics import duplicate_reservation_total
 from src.models.seat import Seat
 from src.models.reservation import Reservation
 from src.redis.lock import reservation_lock, LockAcquireError
@@ -57,6 +58,7 @@ class ReservationService:
         user_uuid, event_uuid
       )
       if existing:
+        duplicate_reservation_total.inc()
         raise DuplicateReservationError(
           f"User {user_id} already has a held reservation for event {event_id}"
         )

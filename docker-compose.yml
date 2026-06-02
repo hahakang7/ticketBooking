@@ -49,8 +49,8 @@ services:
     ports:
       - "9090:9090"
     volumes:
-      - ./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-      - ./infra/prometheus/alert-rules.yaml:/etc/prometheus/alert-rules.yaml
+      - ./infra/prometheus/local/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./infra/prometheus/local/alert-rules.yaml:/etc/prometheus/alert-rules.yaml
       - prometheus_data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'

@@ -27,7 +27,8 @@
       "Bash(docker-compose -f docker-compose.api.yml up -d)",
       "Bash(python -m alembic upgrade head)",
       "Bash(python -m src.database.seed)",
-      "Bash(python test_integration.py)"
+      "Bash(python test_integration.py)",
+      "Bash(Get-ChildItem -Path \"C:\\\\KU\\\\ticketBooking\\\\tests\\\\k6\" -Force)"
     ]
   }
 }

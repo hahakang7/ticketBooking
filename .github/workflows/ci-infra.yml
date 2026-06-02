@@ -72,8 +72,8 @@ jobs:
           tar xzf prometheus-${PROM_VERSION}.linux-amd64.tar.gz
           sudo mv prometheus-${PROM_VERSION}.linux-amd64/promtool /usr/local/bin/
 
-      - name: Validate prometheus.yml
+      - name: Validate local prometheus.yml
         run: promtool check config infra/prometheus/prometheus.yml
 
-      - name: Validate alert rules
+      - name: Validate local alert rules
         run: promtool check rules infra/prometheus/alert-rules.yaml
