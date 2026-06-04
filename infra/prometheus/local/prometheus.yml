@@ -10,7 +10,7 @@ scrape_configs:
     static_configs:
       - targets: ["localhost:9090"]
 
-  - job_name: "core-api-local"
+  - job_name: "core-api"
     static_configs:
       - targets: ["core-api:8000"]
     metrics_path: "/metrics"
