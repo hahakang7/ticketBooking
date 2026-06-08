@@ -11,7 +11,7 @@ import storageService from './services/storage';
 function App() {
   // 'queue' | 'seat_selection' | 'payment' | 'confirmation'
   const [phase, setPhase] = useState('queue');
-  const [timer, setTimer] = useState(9 * 60 + 3);
+  const [timer, setTimer] = useState(5 * 60);
   const [selectedSeats, setSelectedSeats] = useState([]);
   const [bookingInfo, setBookingInfo] = useState(null);
 
@@ -47,7 +47,7 @@ function App() {
   const handleDone = () => {
     setSelectedSeats([]);
     setBookingInfo(null);
-    setTimer(9 * 60 + 3);
+    setTimer(5 * 60);
     setPhase('queue');
   };
 

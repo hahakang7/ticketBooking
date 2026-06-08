@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import socketService from '../services/socket'
 import storageService from '../services/storage'
 
@@ -58,17 +58,6 @@ export const useWebSocket = (eventId) => {
     }
 
     // { event_id, seat_ids: [] }
-    const handleSeatHoldExpired = (data) => {
-      const seatIds = data?.seat_ids || []
-      if (!seatIds.length) return
-      setSeatUpdates((prev) => {
-        const next = { ...prev }
-        seatIds.forEach((id) => { next[id] = 'available' })
-        return next
-      })
-    }
-
-    // { event_id, seat_ids: [] }
     const handleSeatReserved = (data) => {
       const seatIds = data?.seat_ids || []
       if (!seatIds.length) return
@@ -83,7 +72,6 @@ export const useWebSocket = (eventId) => {
     socketService.on('disconnected', handleDisconnected)
     socketService.on('error', handleError)
     socketService.on('seat_status_updated', handleSeatStatusUpdated)
-    socketService.on('seat_hold_expired', handleSeatHoldExpired)
     socketService.on('seat_reserved', handleSeatReserved)
 
     // 이미 연결된 경우 즉시 구독
@@ -97,15 +85,10 @@ export const useWebSocket = (eventId) => {
       socketService.off('disconnected', handleDisconnected)
       socketService.off('error', handleError)
       socketService.off('seat_status_updated', handleSeatStatusUpdated)
-      socketService.off('seat_hold_expired', handleSeatHoldExpired)
       socketService.off('seat_reserved', handleSeatReserved)
       clearHeartbeat()
     }
   }, [eventId])
 
-  const requestSeatSummary = useCallback(() => {
-    if (eventId) socketService.emit('request_seat_summary', { event_id: eventId })
-  }, [eventId])
-
-  return { isConnected, seatUpdates, error, requestSeatSummary }
+  return { isConnected, seatUpdates, error }
 }

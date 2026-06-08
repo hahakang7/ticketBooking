@@ -35,8 +35,8 @@ io.use(loggerMiddleware)
 
 // 서비스 초기화
 const socketService = new SocketService(io)
-const eventService = new EventService(io, socketService)
 const seatService = new SeatService(io)
+const eventService = new EventService(io, socketService, seatService)
 
 // 이벤트 핸들러 설정
 setupConnectionEvents(io, socketService, eventService)
