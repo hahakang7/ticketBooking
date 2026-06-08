@@ -1,4 +1,5 @@
 import logger from '../utils/logger.js'
+import { unsubscribeFromSeatUpdates } from '../events/seat-events.js'
 
 class EventService {
   constructor(io, socketService, seatService) {
@@ -49,6 +50,7 @@ class EventService {
       if (eventRoom.subscribers.size === 0) {
         this.eventRooms.delete(eventId)
         this.seatService?.clearEvent(eventId)
+        unsubscribeFromSeatUpdates(eventId)
       }
     }
 

@@ -31,6 +31,16 @@ class RedisService {
     logger.debug(`Subscribed to channel: ${channel}`)
   }
 
+  async unsubscribe(channel) {
+    if (!this.subscriberClient) return
+    try {
+      await this.subscriberClient.unsubscribe(channel)
+      logger.debug(`Unsubscribed from channel: ${channel}`)
+    } catch (err) {
+      logger.error(`Failed to unsubscribe from ${channel}:`, err)
+    }
+  }
+
   async disconnect() {
     if (this.subscriberClient) {
       await this.subscriberClient.quit()

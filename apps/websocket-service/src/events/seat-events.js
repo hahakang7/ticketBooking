@@ -26,6 +26,14 @@ async function subscribeToSeatUpdates(eventId, seatService) {
   }
 }
 
+export async function unsubscribeFromSeatUpdates(eventId) {
+  const channel = `seat_updates:${eventId}`
+  if (!subscribedChannels.has(channel)) return
+  subscribedChannels.delete(channel)
+  await redisService.unsubscribe(channel)
+  logger.info(`Unsubscribed from Redis channel: ${channel}`)
+}
+
 export const setupSeatEvents = (io, eventService, seatService) => {
   io.on('connection', (socket) => {
     // subscribe_event 시 해당 이벤트의 Redis 채널도 구독
