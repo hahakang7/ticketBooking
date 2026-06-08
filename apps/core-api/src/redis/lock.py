@@ -44,10 +44,11 @@ class RedisLock:
     """
     SET key value NX PX ttl_ms.
     retry: 재시도 횟수 (기본 3회)
-    retry_delay_ms: 재시도 간격 (ms)
+    retry_delay_ms: 초기 재시도 간격 (ms), 지수 백오프 적용
     반환: 성공 True, 실패 False
     """
     self.lock_value = str(uuid.uuid4())
+    current_delay_ms = retry_delay_ms
     for attempt in range(retry):
       result = self.r.set(
         self.key,
@@ -59,7 +60,9 @@ class RedisLock:
         logger.debug(f"Lock acquired: {self.key} (attempt {attempt+1})")
         return True
       if attempt < retry - 1:
-        time.sleep(retry_delay_ms / 1000)
+        # 지수 백오프: 100ms → 200ms → 400ms
+        time.sleep(current_delay_ms / 1000)
+        current_delay_ms = min(current_delay_ms * 2, 1000)  # 최대 1초로 제한
     logger.warning(f"Lock acquire failed: {self.key}")
     return False
 
