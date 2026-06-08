@@ -53,11 +53,19 @@ export const useQueue = () => {
       sseService.close()
     }
 
+    const handleTokenExpired = () => {
+      storageService.removeQueueToken()
+      storageService.removeQueueUser()
+      setStatus('error')
+      setError('대기 토큰이 만료되었습니다. 다시 대기열에 참가해 주세요.')
+    }
+
     sseService.on('connected', handleConnected)
     sseService.on('disconnected', handleDisconnected)
     sseService.on('error', handleError)
     sseService.on('queue_update', handleQueueUpdate)
     sseService.on('queue_token_ready', handleTokenReady)
+    sseService.on('token_expired', handleTokenExpired)
 
     const existingToken = storageService.getQueueToken()
     const queueUser = storageService.getQueueUser()
@@ -72,6 +80,7 @@ export const useQueue = () => {
       sseService.off('error', handleError)
       sseService.off('queue_update', handleQueueUpdate)
       sseService.off('queue_token_ready', handleTokenReady)
+      sseService.off('token_expired', handleTokenExpired)
       if (mockCleanupRef.current) mockCleanupRef.current()
     }
   }, [])

@@ -5,6 +5,7 @@ export const setupSubscriptionEvents = (io, eventService, seatService) => {
   io.on('connection', (socket) => {
     // 좌석 임시 점유 알림 (WebSocket API 스펙: seat_hold)
     socket.on('seat_hold', (data) => {
+      if (!socket.data.userId) return
       const { event_id, seat_ids, reservation_id, hold_duration } = data || {}
       if (!event_id || !seat_ids?.length) return
 
@@ -20,6 +21,7 @@ export const setupSubscriptionEvents = (io, eventService, seatService) => {
 
     // 좌석 선택 취소 알림 (WebSocket API 스펙: seat_unhold)
     socket.on('seat_unhold', (data) => {
+      if (!socket.data.userId) return
       const { event_id, seat_ids } = data || {}
       if (!event_id || !seat_ids?.length) return
 
@@ -33,12 +35,14 @@ export const setupSubscriptionEvents = (io, eventService, seatService) => {
       })
     })
 
-    // 가용 좌석 현황 요청
+    // 좌석 가용성 요약 요청 (WebSocket API 스펙: request_seat_summary)
     socket.on('request_seat_summary', (data) => {
       const { event_id } = data || {}
       if (!event_id) return
+
       const summary = seatService.getSeatsSummary(event_id)
       socket.emit('seat_availability_summary', summary)
     })
+
   })
 }

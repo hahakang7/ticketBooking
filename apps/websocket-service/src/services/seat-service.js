@@ -55,6 +55,11 @@ class SeatService {
     return Object.values(eventSeats).filter((s) => s.status === 'available').length
   }
 
+  clearEvent(eventId) {
+    this.seatStates.delete(eventId)
+    logger.debug(`Seat state cleared for event ${eventId}`)
+  }
+
   getSeatsSummary(eventId) {
     const eventSeats = this.seatStates.get(eventId) || {}
     const statusCounts = {

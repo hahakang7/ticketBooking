@@ -36,12 +36,5 @@ export const setupSeatEvents = (io, eventService, seatService) => {
       }
     })
 
-    // 좌석 현황 요청
-    socket.on('request_seat_summary', (data) => {
-      const { event_id } = data || {}
-      if (!event_id) return
-      const summary = seatService.getSeatsSummary(event_id)
-      socket.emit('seat_availability_summary', summary)
-    })
   })
 }
