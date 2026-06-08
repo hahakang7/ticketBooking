@@ -2,7 +2,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: websocket-service
-  namespace: default
+  namespace: ticket-system
   labels:
     app: websocket-service
     tier: realtime

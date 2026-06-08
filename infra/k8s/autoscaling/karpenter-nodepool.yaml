@@ -1,10 +1,19 @@
-apiVersion: karpenter.sh/v1beta1
+apiVersion: karpenter.sh/v1
 kind: NodePool
 metadata:
   name: ticket-system-pool
 spec:
   template:
     spec:
+      # EC2NodeClass 연결 (AWS 전용 노드 설정)
+      nodeClassRef:
+        group: karpenter.k8s.aws
+        kind: EC2NodeClass
+        name: ticket-system-nodeclass
+
+      # 노드 만료 시간 (30일 후 순환)
+      expireAfter: 720h
+
       requirements:
         - key: kubernetes.io/arch
           operator: In
@@ -15,20 +24,24 @@ spec:
         - key: node.kubernetes.io/instance-type
           operator: In
           values:
-            - "c5.large"
-            - "c5.xlarge"
-            - "c6i.large"
-            - "c6i.xlarge"
+            - "t3.small"
+            - "c7i-flex.large"
+            - "m7i-flex.large"
         - key: karpenter.sh/capacity-type
           operator: In
           values: ["on-demand"]
+
+  # NodePool 전체 리소스 상한
   limits:
     cpu: "1000"
-    memory: "1000Gi"
+    memory: 1000Gi
+
   disruption:
+    # 노드에 Pod가 없거나 사용률이 낮으면 통합
+    consolidationPolicy: WhenEmptyOrUnderutilized
     consolidateAfter: 30s
-    expireAfter: 2592000s
+    # 동시에 교체 가능한 노드 비율 제한 (최소 1개 보장)
     budgets:
       - nodes: "10%"
-        duration: 5m
+
   weight: 100

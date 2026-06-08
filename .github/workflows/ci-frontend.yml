@@ -16,10 +16,10 @@ jobs:
     runs-on: ubuntu-latest
     name: Lint & Format Check
     steps:
-      - uses: actions/checkout@v3
-      
+      - uses: actions/checkout@v4
+
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
@@ -32,16 +32,16 @@ jobs:
       - name: Run ESLint
         working-directory: ./apps/frontend
         run: npm run lint
-  
+
   build:
     runs-on: ubuntu-latest
     name: Build & Bundle
     needs: lint
     steps:
-      - uses: actions/checkout@v3
-      
+      - uses: actions/checkout@v4
+
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
@@ -54,25 +54,25 @@ jobs:
       - name: Build
         working-directory: ./apps/frontend
         run: npm run build
-      
+
       - name: Check bundle size
         working-directory: ./apps/frontend
         run: |
           BUNDLE_SIZE=$(du -sh dist | cut -f1)
           echo "Bundle size: $BUNDLE_SIZE"
-  
+
   docker-build:
     runs-on: ubuntu-latest
     name: Build Docker Image
     needs: build
     steps:
-      - uses: actions/checkout@v3
-      
+      - uses: actions/checkout@v4
+
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-      
+        uses: docker/setup-buildx-action@v3
+
       - name: Build image
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v5
         with:
           context: ./apps/frontend
           push: false

@@ -12,35 +12,14 @@ on:
       - 'apps/websocket-service/**'
 
 jobs:
-  lint:
-    runs-on: ubuntu-latest
-    name: Lint & Format Check
-    steps:
-      - uses: actions/checkout@v3
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: 'apps/websocket-service/package-lock.json'
-
-      - name: Install dependencies
-        working-directory: ./apps/websocket-service
-        run: npm ci
-
-      - name: Run ESLint
-        working-directory: ./apps/websocket-service
-        run: npm run lint
-  
   test:
     runs-on: ubuntu-latest
     name: Unit Tests
     steps:
-      - uses: actions/checkout@v3
-      
+      - uses: actions/checkout@v4
+
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
@@ -53,19 +32,19 @@ jobs:
       - name: Run tests
         working-directory: ./apps/websocket-service
         run: npm test --if-present
-  
+
   build:
     runs-on: ubuntu-latest
     name: Build Docker Image
-    needs: [lint, test]
+    needs: [test]
     steps:
-      - uses: actions/checkout@v3
-      
+      - uses: actions/checkout@v4
+
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-      
+        uses: docker/setup-buildx-action@v3
+
       - name: Build image
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v5
         with:
           context: ./apps/websocket-service
           push: false

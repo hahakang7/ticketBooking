@@ -1,0 +1,50 @@
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  name: ticket-booking
+  region: ap-northeast-2
+  version: "1.31"
+  tags:
+    project: ticket-booking
+    environment: production
+    karpenter.sh/discovery: ticket-booking
+
+iam:
+  withOIDC: true
+
+# Karpenter가 관리하지 않는 시스템 노드 (coredns, karpenter 등 실행용)
+managedNodeGroups:
+  - name: system-nodes
+    instanceType: t3.small
+    minSize: 2
+    maxSize: 4
+    desiredCapacity: 2
+    labels:
+      role: system
+      karpenter.sh/capacity-type: on-demand
+    taints:
+      - key: CriticalAddonsOnly
+        value: "true"
+        effect: NoSchedule
+    tags:
+      karpenter.sh/discovery: ticket-booking
+    iam:
+      attachPolicyARNs:
+        - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
+        - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+
+addons:
+  - name: vpc-cni
+    version: latest
+    configurationValues: '{"env":{"ENABLE_PREFIX_DELEGATION":"true"}}'
+  - name: coredns
+    version: latest
+  - name: kube-proxy
+    version: latest
+  - name: aws-ebs-csi-driver
+    version: latest
+    wellKnownPolicies:
+      ebsCSIController: true

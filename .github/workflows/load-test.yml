@@ -1,7 +1,6 @@
 name: Load Test
 
 on:
-  # 수동 실행 (테스트 종류와 강도 선택 가능)
   workflow_dispatch:
     inputs:
       test_type:
@@ -36,9 +35,8 @@ jobs:
     name: Run k6 Load Test
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      # k6 설치
       - name: Install k6
         run: |
           sudo gpg -k
@@ -49,18 +47,13 @@ jobs:
           sudo apt-get update
           sudo apt-get install k6
 
-      # Core API 서버 실행 (GitHub Actions 환경 내에서)
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
-
       - name: Start services with Docker Compose
+        # docker-compose.yml이 include: 로 api/gateway 파일을 포함하므로 단일 명령 사용
         run: |
-          docker compose -f docker-compose.yml -f docker-compose.api.yml up -d postgres redis
-          sleep 10  # DB 초기화 대기
-          docker compose -f docker-compose.yml -f docker-compose.api.yml up -d core-api
-          sleep 5   # API 서버 기동 대기
+          docker compose up -d postgres redis
+          sleep 10
+          docker compose up -d core-api
+          sleep 5
 
       - name: Wait for Core API health
         run: |
@@ -73,7 +66,9 @@ jobs:
             sleep 3
           done
 
-      # 대기열 부하 테스트
+      - name: Create results directory
+        run: mkdir -p results
+
       - name: Run Queue Load Test
         if: github.event.inputs.test_type == 'queue' || github.event.inputs.test_type == 'all' || github.event_name == 'push'
         run: |
@@ -87,7 +82,6 @@ jobs:
         env:
           BASE_URL: http://localhost:8000
 
-      # 예약 부하 테스트 (Week 3 이후)
       - name: Run Reservation Stress Test
         if: github.event.inputs.test_type == 'reservation' || github.event.inputs.test_type == 'all'
         run: |
@@ -114,11 +108,10 @@ jobs:
         env:
           WS_URL: ws://localhost:3000
           HTTP_URL: http://localhost:3000
-          EVENT_ID: ${{ steps.get-event.outputs.event_id || 'evt-default' }}       
+          EVENT_ID: ${{ github.event.inputs.event_id || 'evt-default' }}
 
-      # 테스트 결과 저장 (아티팩트로 업로드)
       - name: Upload test results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: k6-results-${{ github.run_number }}
@@ -127,4 +120,4 @@ jobs:
 
       - name: Stop services
         if: always()
-        run: docker compose -f docker-compose.yml -f docker-compose.api.yml down
+        run: docker compose down
