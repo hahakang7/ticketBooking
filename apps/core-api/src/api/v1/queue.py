@@ -85,3 +85,27 @@ async def queue_sse(
       await asyncio.sleep(2)
 
   return StreamingResponse(event_stream(), media_type="text/event-stream", headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+
+
+@router.delete("/leave", response_model=ApiResponse[None], status_code=status.HTTP_200_OK)
+async def leave_queue(
+  user_id: str = Query(...),
+  event_id: str = Query(...),
+  token_user: dict = Depends(get_user_from_queue_token),
+  service: QueueService = Depends(get_queue_service),
+):
+  """대기열 이탈 (queue_token 필수)"""
+  if token_user["sub"] != user_id:
+    raise HTTPException(
+      status_code=status.HTTP_403_FORBIDDEN,
+      detail="user_id mismatch with token",
+    )
+
+  removed = service.leave_queue(user_id, event_id)
+  if not removed:
+    raise HTTPException(
+      status_code=status.HTTP_404_NOT_FOUND,
+      detail="user not in queue",
+    )
+
+  return ApiResponse(code=200, message="success", data=None)

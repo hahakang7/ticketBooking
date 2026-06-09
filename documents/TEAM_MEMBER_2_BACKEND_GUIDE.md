@@ -407,13 +407,14 @@ Medium 이슈 3개 개선:
     └─ 위치: apps/core-api/src/api/v1/queue.py
        ├─ [x] POST /api/queue/join - 대기열 진입
        ├─ [x] GET /api/queue/status - 대기 상태 조회
-       └─ [x] SSE /api/queue/sse - 실시간 업데이트
+       ├─ [x] SSE /api/queue/sse - 실시간 업데이트
+       └─ [x] DELETE /api/queue/leave - 대기열 이탈 ✓
 
 [x] Rate Limiting
     └─ 위치: apps/core-api/src/middleware/rate_limiter.py
-       ├─ [x] /api/queue/join: 1 req/sec per IP
+       ├─ [x] /api/queue/join: 3 req/sec per IP (커밋 48ee787에서 변경)
        ├─ [x] /api/v1/reservations: 2 req/sec per user (JWT user_id 기반)
-       ├─ [x] 그 외 API: 10 req/sec per IP
+       ├─ [x] 그 외 API: 5 req/sec per IP (커밋 48ee787에서 변경)
        └─ [x] Redis 슬라이딩 윈도우 카운터 기반 구현
 
 [x] 로깅 설정
@@ -428,8 +429,8 @@ Medium 이슈 3개 개선:
        ├─ [x] Token 발급/검증 테스트
        └─ [x] SSE 연결 테스트 (인증 + 헤더 검증 2개)
 
-[ ] 통합 테스트
-    └─ [ ] docker-compose up + queue API 테스트
+[x] 통합 테스트
+    └─ [x] docker-compose up + queue API 테스트 (Week 3 완료 요약에서 Queue → Reservation → Payment 전체 플로우 검증)
 
 [x] 팀원 1에게 k6 테스트용 정보 제공
     └─ [x] Queue API 엔드포인트 URL (COLLABORATION_NEEDED.md 참고)
@@ -492,19 +493,12 @@ Medium 이슈 3개 개선:
 
 [x] Payment Service 구현
     └─ 위치: apps/core-api/src/services/payment_service.py
-       ├─ [x] process_payment() - 결제 처리 ✓
-       ├─ [ ] refund_payment() - 환불 (Week 4)
-       └─ [ ] verify_payment() - 결제 검증 (Week 4)
+       └─ [x] process_payment() - 결제 처리 ✓
 
 [x] Payment API 엔드포인트
     └─ 위치: apps/core-api/src/api/v1/payments.py
        ├─ [x] POST /api/v1/payments - 결제 요청 ✓
        └─ [x] GET /api/v1/payments/{id} - 결제 조회 ✓
-
-[ ] 예측 모델 API 엔드포인트
-    └─ 위치: apps/core-api/src/api/v1/prediction.py
-       ├─ [ ] POST /api/prediction/forecast - 트래픽 예측 (팀원 1 완료 후)
-       └─ [ ] GET /api/prediction/resource-plan - 리소스 계획 (팀원 1 완료 후)
 
 [x] 데이터베이스 트랜잭션 최적화
     └─ 위치: apps/core-api/src/services/
@@ -514,8 +508,14 @@ Medium 이슈 3개 개선:
 
 [x] Redis Pub/Sub 연동 준비
     └─ 위치: apps/core-api/src/services/reservation_service.py
-       ├─ [x] 좌석 변경 이벤트 발행 ✓ _publish_seat_update
+       ├─ [x] 좌석 변경 이벤트 발행 ✓ _publish_seat_update (배열 형식)
        └─ [x] 채널 정의 ✓ seat_updates:{event_id}
+
+[x] 만료된 hold 좌석 정리 메커니즘 ✓ (구현 완료)
+    └─ 위치: apps/core-api/src/services/reservation_service.py
+       ├─ [x] release_expired_holds() - 백그라운드 태스크 (Reservation.expires_at < NOW())
+       ├─ [x] release_holds_on_disconnect() - 연결 종료 시 정리
+       └─ [x] Pub/Sub 발행으로 available 상태 브로드캐스트
 
 [x] 고급 테스트
     └─ 위치: tests/
@@ -533,7 +533,17 @@ Medium 이슈 3개 개선:
 - 팀원 1과: `apps/core-api/src/prediction/` 모듈 임포트 방식 협의
 - 팀원 3과: Redis Pub/Sub 채널 및 메시지 형식 확정
     - 채널: `seat_updates:{event_id}`
-    - 발행 데이터: `{"seat_id", "status", "held_by", "event_id"}`
+    - 발행 데이터: 배열 형식 (reservation_service._publish_seat_update에서 구현)
+      ```json
+      {
+        "event_id": "evt-123",
+        "seats": [
+          {"seat_id": "s1", "status": "hold|sold|available"},
+          {"seat_id": "s2", "status": "hold|sold|available"}
+        ],
+        "timestamp": "2026-05-25T12:34:56.789Z"
+      }
+      ```
 - 팀원 1에게: k6 reservation-stress-test 시나리오 handoff
 
 ---
@@ -588,7 +598,7 @@ Medium 이슈 3개 개선:
 
 ✓ Pub/Sub 준비
   - 채널: seat_updates:{event_id}
-  - 메시지: JSON (seat_id, status, timestamp)
+  - 메시지: 배열 형식 JSON (event_id, seats[], timestamp)
   - best-effort 발행 (실패해도 예약 영향 없음)
 
 ✓ 이중 안전망 (Double-check Pattern)
@@ -603,6 +613,10 @@ Medium 이슈 3개 개선:
 ✓ Queue → Reservation → Payment 전체 플로우 성공
 ✓ 좌석 hold 성공 (status: held, expires_at: 5분)
 ✓ 결제 처리 성공 (95% 성공률 시뮬레이션)
+✓ 결제 실패 시 hold 자동 만료 처리 ✓
+  - Reservation 상태: held → (release_expired_holds 또는 수동 cancel 시) cancelled
+  - Seat 상태: hold → available
+  - Pub/Sub 발행: available 상태로 모든 클라이언트에 즉시 반영
 ✓ 예약 완료 (status: completed, seat: sold)
 ✓ 중복 예매 차단 (409 Conflict)
 ✓ 기존 Queue 테스트 11개 모두 PASS
@@ -623,6 +637,20 @@ Medium 이슈 3개 개선:
 #### 할일 체크리스트:
 
 ```
+[ ] 결제 서비스 완성
+    └─ 위치: apps/core-api/src/services/payment_service.py
+       └─ [ ] verify_payment() - 외부 PG 결제 검증 (PG 연동 시)
+
+[ ] 예측 모델 API 연동
+    └─ 위치: apps/core-api/src/api/v1/prediction.py
+       ├─ [ ] POST /api/prediction/forecast - 트래픽 예측 (팀원 1 완료 후)
+       └─ [ ] GET /api/prediction/resource-plan - 리소스 계획 (팀원 1 완료 후)
+
+[ ] Queue Token 갱신 (선택사항 - 팀원 3과 협의 필요)
+    └─ [ ] POST /api/queue/token/refresh 엔드포인트 추가 여부 결정
+    └─ 현재 상태: 팀원 3 가이드 Week 2에서 "미구현 - Week 3 이후"로 표기됨
+    └─ 필요성: 장시간 대기 시 queue_token 만료 대응
+
 [ ] 부하 테스트 결과 분석
     └─ [ ] k6 reservation-stress-test 결과 검토 (팀원 1과)
     └─ [ ] 병목 지점 파악 (DB, Redis, Python?)
