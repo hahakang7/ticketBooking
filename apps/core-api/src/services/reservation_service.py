@@ -4,11 +4,13 @@ from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import List
 import json
+import time
 
 import redis as redis_lib
 from sqlalchemy.orm import Session
 from sqlalchemy import and_
 
+from src.metrics import duplicate_reservation_total, reservation_duration_seconds
 from src.models.seat import Seat
 from src.models.reservation import Reservation
 from src.redis.lock import reservation_lock, LockAcquireError
@@ -50,6 +52,7 @@ class ReservationService:
     """
     user_uuid = uuid.UUID(user_id)
     event_uuid = uuid.UUID(event_id)
+    _start = time.perf_counter()
 
     with reservation_lock(self.r, event_id):
       # --- DB 레벨 double-check ---
@@ -57,6 +60,7 @@ class ReservationService:
         user_uuid, event_uuid
       )
       if existing:
+        duplicate_reservation_total.inc()
         raise DuplicateReservationError(
           f"User {user_id} already has a held reservation for event {event_id}"
         )
@@ -119,6 +123,7 @@ class ReservationService:
 
     # 총 금액 계산
     total_price = sum(s.price for s in seats)
+    reservation_duration_seconds.observe(time.perf_counter() - _start)
     return self._to_response(reservation, total_price)
 
   def cancel_reservation(

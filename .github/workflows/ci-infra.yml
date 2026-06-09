@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Validate K8s Manifests
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Install kubectl
         run: |
@@ -47,23 +47,19 @@ jobs:
     runs-on: ubuntu-latest
     name: Validate Docker Compose
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - name: Check docker-compose.yml syntax
-        run: docker compose -f docker-compose.yml config > /dev/null
-
-      - name: Check docker-compose.api.yml syntax
-        run: docker compose -f docker-compose.yml -f docker-compose.api.yml config > /dev/null
-
-      - name: Check docker-compose.gateway.yml syntax
-        run: docker compose -f docker-compose.yml -f docker-compose.gateway.yml config > /dev/null
+      - name: Check docker compose syntax
+        # docker-compose.yml이 include: 로 api/gateway 파일을 이미 포함하므로
+        # 단일 명령으로 전체 구성을 검증한다
+        run: docker compose config > /dev/null
 
   # ── Prometheus 설정 검증 ──────────────────────────────────────
   validate-prometheus:
     runs-on: ubuntu-latest
     name: Validate Prometheus Config
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Install promtool
         run: |
@@ -72,8 +68,8 @@ jobs:
           tar xzf prometheus-${PROM_VERSION}.linux-amd64.tar.gz
           sudo mv prometheus-${PROM_VERSION}.linux-amd64/promtool /usr/local/bin/
 
-      - name: Validate prometheus.yml
-        run: promtool check config infra/prometheus/prometheus.yml
+      - name: Validate local prometheus.yml
+        run: promtool check config infra/prometheus/local/prometheus.yml
 
-      - name: Validate alert rules
-        run: promtool check rules infra/prometheus/alert-rules.yaml
+      - name: Validate local alert rules
+        run: promtool check rules infra/prometheus/local/alert-rules.yaml

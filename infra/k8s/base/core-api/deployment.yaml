@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
         - name: core-api
-          image: core-api:latest
+          image: 076812850421.dkr.ecr.ap-northeast-2.amazonaws.com/core-api:latest
           ports:
             - containerPort: 8000
           envFrom:

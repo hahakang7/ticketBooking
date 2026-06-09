@@ -137,7 +137,7 @@ groups:
     rules:
       - alert: WebSocketMessageDelayHigh
         # KPI: 0.1초 이내 전파
-        expr: websocket_message_latency_p95_seconds > 0.1
+        expr: histogram_quantile(0.95, rate(websocket_message_latency_seconds_bucket[5m])) > 0.1
         for: 2m
         labels:
           severity: warning

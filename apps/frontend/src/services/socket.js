@@ -35,8 +35,7 @@ class SocketService {
     // 소켓 이벤트를 SocketService 리스너로 전달
     const socketEvents = [
       'seat_status_updated',
-      'seat_hold_expired',
-      'seat_availability_summary',
+      'seat_reserved',
       'subscription_confirmed',
       'connection_info',
     ]
