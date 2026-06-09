@@ -65,45 +65,45 @@ docs/
 #### 할일 체크리스트:
 
 ```
-[ ] K8s base 구조 생성
+[x] K8s base 구조 생성
     └─ 위치: infra/k8s/base/shared/
-       ├─ [ ] ingress.yaml 작성 (core-api, websocket, frontend 라우팅)
-       ├─ [ ] configmap.yaml 작성 (공통 환경변수)
-       └─ [ ] secret.yaml 작성 (민감 정보)
+       ├─ [x] ingress.yaml 작성 (core-api, websocket, frontend 라우팅)
+       ├─ [x] configmap.yaml 작성 (공통 환경변수)
+       └─ [x] secret.yaml 작성 (민감 정보)
 
-[ ] K8s autoscaling 설정
+[x] K8s autoscaling 설정
     └─ 위치: infra/k8s/autoscaling/
-       ├─ [ ] karpenter-nodepool.yaml 작성
-       ├─ [ ] core-api-hpa.yaml 작성
-       └─ [ ] websocket-hpa.yaml 작성
+       ├─ [x] karpenter-nodepool.yaml 작성
+       ├─ [x] core-api-hpa.yaml 작성
+       └─ [x] websocket-hpa.yaml 작성
 
-[ ] Prometheus 기초 설정
+[x] Prometheus 기초 설정 (service-monitor.yaml 미완)
     └─ 위치: infra/prometheus/
-       ├─ [ ] prometheus.yml 작성
-       ├─ [ ] alert-rules.yaml 작성
+       ├─ [x] prometheus.yml 작성
+       ├─ [x] alert-rules.yaml 작성
        └─ [ ] service-monitor.yaml 작성
 
-[ ] Redis Operator 설정
+[x] Redis Operator 설정
     └─ 위치: infra/redis/
-       ├─ [ ] redis-operator-setup.yaml
-       └─ [ ] redis-cluster.yaml
+       ├─ [x] redis-operator-setup.yaml
+       └─ [x] redis-cluster.yaml
 
-[ ] Docker Compose 기본 설정
+[x] Docker Compose 기본 설정
     └─ 위치: docker-compose.yml
-       ├─ [ ] PostgreSQL 서비스 설정
-       ├─ [ ] Redis 서비스 설정
-       └─ [ ] Prometheus 서비스 설정
+       ├─ [x] PostgreSQL 서비스 설정
+       ├─ [x] Redis 서비스 설정
+       └─ [x] Prometheus 서비스 설정
 
-[ ] CI/CD 워크플로우 설정
+[x] CI/CD 워크플로우 설정
     └─ 위치: .github/workflows/
-       ├─ [ ] ci-infra.yml 작성 (yamllint, kubernetes validate)
-       └─ [ ] CODEOWNERS 파일 관리
+       ├─ [x] ci-infra.yml 작성 (yamllint, kubernetes validate)
+       └─ [x] CODEOWNERS 파일 관리
 
-[ ] 문서 작성
+[~] 문서 작성 (infra/README.md는 완료, infra/k8s/README.md 미완)
     └─ 위치: infra/README.md
-       ├─ [ ] K8s 배포 방법
-       ├─ [ ] 구조 설명
-       └─ [ ] 트러블슈팅 가이드
+       ├─ [x] K8s 배포 방법
+       ├─ [x] 구조 설명
+       └─ [x] 트러블슈팅 가이드
 ```
 
 **협업 포인트:**
@@ -120,26 +120,26 @@ docs/
 #### 할일 체크리스트:
 
 ```
-[ ] k6 기본 환경 설정
+[x] k6 기본 환경 설정
     └─ 위치: tests/k6/
-       └─ [ ] README.md 작성 (k6 설치, 실행 방법)
+       └─ [x] README.md 작성 (k6 설치, 실행 방법)
 
-[ ] Queue Load Test 작성
+[x] Queue Load Test 작성
     └─ 위치: tests/k6/queue-load-test.js
-       ├─ [ ] 대기열 진입 API 테스트
-       ├─ [ ] RPS 측정 (목표: 100+ concurrent users)
-       └─ [ ] 메트릭 수집 (응답 시간, 에러율)
+       ├─ [x] 대기열 진입 API 테스트
+       ├─ [x] RPS 측정 (목표: 100+ concurrent users)
+       └─ [x] 메트릭 수집 (응답 시간, 에러율)
 
-[ ] CI/CD 파이프라인 테스트
+[x] CI/CD 파이프라인 테스트
     └─ 위치: .github/workflows/
-       └─ [ ] ci-infra.yml 동작 확인
+       └─ [x] ci-infra.yml 동작 확인
 
-[ ] Prometheus 메트릭 수집 확인
+[ ] Prometheus 메트릭 수집 확인 (런타임 검증 필요)
     └─ 위치: infra/prometheus/
        ├─ [ ] Pod CPU/Memory 메트릭 수집 확인
        └─ [ ] k6 테스트 결과 시각화
 
-[ ] Docker Compose 검증
+[ ] Docker Compose 검증 (런타임 검증 필요)
     └─ [ ] docker-compose up 정상 기동 확인
     └─ [ ] 모든 서비스 헬스체크 통과
 ```
@@ -163,29 +163,29 @@ docs/
        ├─ [ ] K8s Volume 설정 (모델 파일 마운트)
        └─ [ ] ConfigMap에 모델 경로 추가
 
-[ ] Reservation Stress Test 작성
+[x] Reservation Stress Test 작성
     └─ 위치: tests/k6/reservation-stress-test.js
-       ├─ [ ] 좌석 예약 API 테스트
-       ├─ [ ] 분산 락 동시성 테스트 (RPS 5k~10k)
-       ├─ [ ] 중복 예매 검증
-       └─ [ ] DB 병목 현상 측정
+       ├─ [x] 좌석 예약 API 테스트
+       ├─ [x] 분산 락 동시성 테스트 (RPS 5k~10k)
+       ├─ [x] 중복 예매 검증
+       └─ [x] DB 병목 현상 측정
 
-[ ] WebSocket Load Test 작성
+[x] WebSocket Load Test 작성
     └─ 위치: tests/k6/websocket-load-test.js
-       ├─ [ ] 웹소켓 연결 부하 테스트
-       ├─ [ ] 메시지 처리량 측정 (목표: 50k+ msg/sec)
-       └─ [ ] 연결 안정성 확인
+       ├─ [x] 웹소켓 연결 부하 테스트
+       ├─ [x] 메시지 처리량 측정 (목표: 50k+ msg/sec)
+       └─ [x] 연결 안정성 확인
 
-[ ] Karpenter 예측형 스케일링 설정
+[x] Karpenter 예측형 스케일링 설정
     └─ 위치: infra/k8s/autoscaling/
-       ├─ [ ] NodePool consolidation 정책 설정
-       ├─ [ ] 비용 최적화 전략 추가
-       └─ [ ] 예측 모델과 연동 준비
+       ├─ [x] NodePool consolidation 정책 설정
+       ├─ [x] 비용 최적화 전략 추가
+       └─ [x] 예측 모델과 연동 준비
 
-[ ] Ingress WebSocket sticky session 설정
+[x] Ingress WebSocket sticky session 설정
     └─ 위치: infra/k8s/base/shared/ingress.yaml
-       ├─ [ ] WebSocket persistence 설정
-       └─ [ ] Session affinity 구성
+       ├─ [x] WebSocket persistence 설정
+       └─ [x] Session affinity 구성
        ⚠️ 팀원 3과 페어 작업 필수
 
 [ ] 모니터링 대시보드 준비
@@ -359,24 +359,24 @@ http://localhost:9090
 ## 📌 체크리스트
 
 ### Week 1 Day 1 (30분)
-- [ ] 팀원 2, 3과 첫 킥오프 미팅 (30분)
+- [x] 팀원 2, 3과 첫 킥오프 미팅 (30분)
   - K8s 리소스 요청값 수집
   - Docker Compose 환경변수 확정
 
 ### Week 1 Day 2-5
-- [ ] K8s base/shared/ 3개 파일 완성
-- [ ] K8s autoscaling/ 3개 파일 완성
-- [ ] Prometheus 기본 설정 완성
-- [ ] 로컬 docker-compose up 테스트
+- [x] K8s base/shared/ 3개 파일 완성
+- [x] K8s autoscaling/ 3개 파일 완성
+- [x] Prometheus 기본 설정 완성 (service-monitor.yaml 미완)
+- [x] 로컬 docker-compose up 테스트 (런타임 검증 필요)
 
 ### Week 2
-- [ ] k6 queue-load-test.js 완성
-- [ ] 부하 테스트 자동화 파이프라인 구축
-- [ ] 팀 전체 공유
+- [x] k6 queue-load-test.js 완성
+- [x] 부하 테스트 자동화 파이프라인 구축
+- [x] 팀 전체 공유
 
 ### Week 3
-- [ ] k6 reservation-stress-test.js, websocket-load-test.js 완성
-- [ ] Ingress WebSocket 설정 (팀원 3과)
+- [x] k6 reservation-stress-test.js, websocket-load-test.js 완성
+- [x] Ingress WebSocket 설정 (팀원 3과)
 - [ ] 예측 모델 기초 데이터 연동 준비
 
 ### Week 4
