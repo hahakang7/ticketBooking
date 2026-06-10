@@ -10,7 +10,7 @@ from src.metrics import duplicate_reservation_total
 
 from src.config import get_settings
 from src.database.db import engine
-from src.api.v1 import health, events, queue, seats, reservations, payments
+from src.api.v1 import health, events, queue, seats, reservations, payments, prediction
 from src.middleware import ErrorHandlerMiddleware, LoggerMiddleware, RateLimiterMiddleware
 from src.redis.client import redis_client
 
@@ -184,3 +184,4 @@ app.include_router(queue.router)
 app.include_router(seats.router)
 app.include_router(reservations.router)
 app.include_router(payments.router)
+app.include_router(prediction.router)

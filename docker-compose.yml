@@ -76,6 +76,24 @@ services:
     profiles:
       - monitoring
 
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: distribute-sys-node-exporter
+    ports:
+      - "9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    networks:
+      - distribute-sys-network
+    profiles:
+      - monitoring
+
 volumes:
   postgres_data:
   redis_data:
