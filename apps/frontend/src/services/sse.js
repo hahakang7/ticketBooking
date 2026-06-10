@@ -63,11 +63,32 @@ class SSEService {
     }
   }
 
+  _isQueueTokenExpired() {
+    if (!this.queueToken) return false
+    try {
+      const payload = JSON.parse(atob(this.queueToken.split('.')[1]))
+      if (!payload?.exp) return false
+      return Date.now() >= payload.exp * 1000
+    } catch {
+      return false
+    }
+  }
+
   _scheduleReconnect() {
     if (this.reconnectAttempts >= this.maxReconnectAttempts || !this.userId) return
+
+    if (this._isQueueTokenExpired()) {
+      this.dispatch('token_expired')
+      return
+    }
+
     const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000)
     this.reconnectAttempts++
     this.reconnectTimer = setTimeout(() => {
+      if (this._isQueueTokenExpired()) {
+        this.dispatch('token_expired')
+        return
+      }
       this._createConnection(this.userId, this.eventId, this.queueToken)
     }, delay)
   }
