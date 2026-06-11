@@ -50,19 +50,20 @@ TLS도 분리: ws 전용 `ticket-ws-tls` secret 사용.
 
 ---
 
-### ❌ Step 1-2. Prometheus ServiceMonitor 생성
+### ✅ Step 1-2. Prometheus ServiceMonitor 생성
 **담당:** 팀원 1  
-**파일:** `infra/prometheus/service-monitor.yaml` (신규 생성)
+**파일:** `infra/prometheus/service-monitor.yaml`  
+**완료일:** 2026-06-11 (WEEK4_PROGRESS.md에 기록됨)
 
-현재 `prometheus.yml`은 static config로 IP를 직접 지정하는 방식.  
-K8s 환경에서는 ServiceMonitor로 Pod 자동 discovery가 필요.
+**완료 내용:**
+- 3개 ServiceMonitor 생성 완료:
+  - `core-api` — monitoring namespace, port: http (pod:8000), interval: 15s
+  - `websocket-service` — monitoring namespace, port: http (pod:3000), interval: 15s
+  - `redis-exporter` — monitoring namespace, port: metrics (9121), interval: 30s
+- redis-exporter Service 별도 생성 (OpsTree 오퍼레이터가 9121 미노출)
+- `prometheus-config.yaml`의 pod annotation 방식 scrape job 제거, ServiceMonitor로 완전 이관
 
-생성할 내용 (3개 ServiceMonitor):
-- `core-api` — port: metrics(8001), path: /metrics, interval: 15s
-- `websocket-service` — port: metrics(9090), path: /metrics, interval: 15s  
-- `redis-exporter` — port: metrics(9121), path: /metrics, interval: 30s
-
-**검증:** `kubectl apply --dry-run=client -f infra/prometheus/service-monitor.yaml`
+**검증 완료:** YAML 문법 검증, kubectl apply --dry-run=client 통과
 
 ---
 
@@ -74,22 +75,16 @@ K8s 환경에서는 ServiceMonitor로 Pod 자동 discovery가 필요.
 
 ### 팀원 1 작업
 
-#### ❌ Step 2-1. 예측 모델 Mock API 엔드포인트 구현
-**파일:** `infra/` 또는 별도 prediction-service (가이드 기준)  
-**목적:** 팀원 2가 `POST /api/prediction/forecast`, `GET /api/prediction/resource-plan`에 연동해야 함.
+#### ✅ Step 2-1. 예측 모델 Mock API 엔드포인트 구현
+**파일:** `src/api/v1/prediction.py`  
+**완료 상태:** 이미 구현됨 (팀원 1 완료)
 
-실제 ML 모델 없이도 k6 부하 테스트 결과 기반 mock 응답을 반환하는 간단한 엔드포인트 구현.  
-구현 위치: core-api에 `/v1/prediction/` 라우터 추가 또는 별도 stub 서버.
+**완료 내용:**
+- `POST /api/v1/prediction/forecast` → `{ expected_users: 5000, peak_time: "14:00" }`
+- `GET /api/v1/prediction/resource-plan` → `{ recommended_replicas: 10, scale_trigger: "cpu_70" }`
+- **Step 2-7에서 event_id 쿼리 파라미터 추가**: event_id 있으면 실모델 계산값, 없으면 mock 반환 (팀원 2가 연동 구현)
 
-응답 형식 (팀원 2와 협의):
-```json
-{
-  "forecast": { "expected_users": 5000, "peak_time": "14:00" },
-  "resource_plan": { "recommended_replicas": 10, "scale_trigger": "cpu_70" }
-}
-```
-
-**검증:** `curl http://localhost:8000/v1/prediction/forecast`
+**검증:** curl 테스트 완료
 
 ---
 
@@ -104,29 +99,19 @@ K8s 환경에서는 ServiceMonitor로 Pod 자동 discovery가 필요.
 
 ---
 
-#### ❌ Step 2-3. Flash Crowd 시뮬레이션 실행 준비
-**파일:** `tests/k6/queue-load-test.js` (기존 수정)
+#### ✅ Step 2-3. Flash Crowd 시뮬레이션 실행 준비
+**파일:** `tests/k6/queue-load-test.js`  
+**완료일:** 이미 구현됨 (팀원 1 완료)
 
-현재 ramping-vus로 점진적 증가만 있음.  
-Flash Crowd 시나리오 추가: 0 → 5000 VU를 30초 안에 급증시키는 시나리오.
+**완료 내용:**
+- `ramping-arrival-rate` executor 포함 (flash_crowd 시나리오)
+- 0 → 5000 req/s 급증 (30s) → 2분 유지 → 감소
+- startTime: '210s'로 ramp_up_down 완료 후 자동 시작
+- KPI 임계값 명시: P95 < 300ms, 에러율 < 5%
+- 커스텀 메트릭 5종 정의 (queue_position, response_time, request_rate, error_count, concurrent_users)
+- BASE_URL, EVENT_ID, FLASH_VUS 환경 변수로 유연하게 구성
 
-```javascript
-scenarios: {
-  flash_crowd: {
-    executor: 'ramping-arrival-rate',
-    startRate: 0,
-    timeUnit: '1s',
-    preAllocatedVUs: 5000,
-    stages: [
-      { duration: '30s', target: 5000 },  // 급증
-      { duration: '2m',  target: 5000 },  // 유지
-      { duration: '30s', target: 0 },     // 감소
-    ]
-  }
-}
-```
-
-**검증:** `k6 run --vus 100 --duration 30s tests/k6/queue-load-test.js` (로컬 스모크 테스트)
+**검증:** 로컬 스모크 테스트 완료
 
 ---
 
@@ -182,12 +167,18 @@ scenarios: {
 
 ---
 
-#### ❌ Step 2-7. 예측 모델 API 연동 (팀원 1 Step 2-1 완료 후)
-**파일:** `apps/core-api/src/services/` 신규 or 기존 서비스  
-**의존:** Step 2-1 완료 필요
+#### ✅ Step 2-7. 예측 모델 API 연동 (팀원 1 Step 2-1 완료 후)
+**파일:** `src/services/prediction_service.py`, `src/api/v1/queue.py`, `src/api/v1/prediction.py`  
+**완료일:** 2026-06-12  
+**의존:** Step 2-1 (이미 완료)
 
-팀원 1이 만든 엔드포인트를 호출해 사전 스케일링 신호를 받는 로직.  
-실제 K8s HPA에 영향을 주는 것이 아니라, 발표용 데모 흐름 구성이 목적.
+**완료 내용:**
+- `PredictionService` 신규 생성: Event 조회 → TrafficForecaster → ResourceCalculator → Redis 캐싱
+- `POST /api/queue/join` 성공 후 BackgroundTasks로 예측 실행 (응답 지연 없음)
+- `GET /api/v1/prediction/resource-plan?event_id=<uuid>` 엔드포인트 업데이트: 실모델 계산값 반환
+- 대기열 최초 오픈 시(queue total == 1) 로그 출력: `[Prediction] event={event_id} → recommend {n} replicas`
+
+**발표용 데모 흐름:** 사용자 join → 백그라운드 예측 실행 → 실시간 스케일링 권고값 로그 표시
 
 ---
 
@@ -375,8 +366,9 @@ curl http://localhost:3000/health
 
 ```
 Step 1-1 (Ingress) ✅ ────────────────────────────→ Step 3-2 (E2E 검증)
-Step 1-2 (ServiceMonitor) ──────────────────────→ Step 3-3 (부하 테스트 메트릭)
-Step 2-1 (예측 모델 API) ────→ Step 2-7 (팀원 2 연동)
+Step 1-2 (ServiceMonitor) ✅ ──────────────────→ Step 3-3 (부하 테스트 메트릭)
+Step 2-1 (예측 모델 API) ✅ ──→ Step 2-7 (팀원 2 연동) ✅
+Step 2-3 (Flash Crowd) ✅ ──────────────────────→ Step 3-3 (부하 테스트)
 Step 2-8 (SeatMap 색상) ✅ ──────────────────────→ Step 3-2 (E2E 검증)
 Step 2-9 (라우팅 연결) ✅ ───────────────────────→ Step 3-2 (E2E 검증)
 Step 3-1, 3-2, 3-3 완료 ────────────────────────→ Step 4-1 (KPI 확인)
@@ -389,6 +381,6 @@ Step 3-1, 3-2, 3-3 완료 ──────────────────
 | 기간 | 내용 | 참여자 |
 |------|------|--------|
 | **Day 1~2** | Phase 1: 협업 블로커 해소 (Ingress ✅, ServiceMonitor ❌) | 팀원 1+3 |
-| **Day 3~5** | Phase 2: 팀원별 병렬 개발 (팀원2: 2-4 ✅, 2-5 ✅, 2-6 ✅ / 팀원3: 2-8 ✅, 2-9 ✅, 2-10 ⚠️ / 팀원1: 나머지 ❌) | 각자 독립 |
+| **Day 3~5** | Phase 2: 팀원별 병렬 개발 (팀원2: 2-4 ✅, 2-5 ✅, 2-6 ✅, 2-7 ✅ / 팀원3: 2-8 ✅, 2-9 ✅, 2-10 ⚠️ / 팀원1: 1-2 ✅, 2-1 ✅, 2-3 ✅, 2-2 ❌) | 각자 독립 |
 | **Day 6~7** | Phase 3: 통합 검증 (Docker, E2E, k6) | 전원 협력 |
 | **Day 8** | Phase 4: KPI 확인, 발표 자료 준비 | 전원 함께 |
