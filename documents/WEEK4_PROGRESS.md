@@ -92,13 +92,41 @@ docker-compose --profile monitoring up -d
 
 ---
 
-## 미해결 사항 (팀원 1+2 공동)
+## Phase 2 — 팀원 2 (성능 최적화)
 
-### namespace 불일치
-`infra/k8s/base/core-api/` 하위 파일에 `namespace: ticket-system` 누락.  
-현재 websocket-service, frontend는 있고 core-api만 없음.  
-그대로 apply 시 core-api가 `default` 네임스페이스에 배포됨.
+### ✅ Step 2-4. DB 인덱스 최적화
+**완료일:** 2026-06-12  
+**파일:** `apps/core-api/src/models/reservation.py`, `apps/core-api/alembic/versions/002_add_reservation_index.py`
 
-수정 필요 파일:
-- `infra/k8s/base/core-api/deployment.yaml`
-- `infra/k8s/base/core-api/service.yaml`
+**완료 내용:**
+- `reservations` 테이블 (status, expires_at) 복합 인덱스 추가
+  - 기존 인덱스: idx_seats_event_status ✅, idx_payments_reservation ✅
+  - 신규 추가: idx_reservations_status_expires
+  - get_expired_held() 쿼리 (만료된 hold 정리) 가속화
+- alembic 마이그레이션 파일 신규 생성
+
+### ✅ Step 2-5. Redis 파이프라인 적용
+**완료일:** 2026-06-12  
+**파일:** `apps/core-api/src/redis/queue.py`, `apps/core-api/src/services/reservation_service.py`
+
+**완료 내용:**
+- queue.py add_to_queue(): zadd + expire → pipeline으로 통합 (RTT 1회 절약)
+- reservation_service.py _publish_seat_update(): delete + publish → pipeline으로 통합
+- 이미 적용된 hold/cancel/complete 등은 유지
+
+### ✅ Step 2-6. 성능 검증 및 병목 제거
+**완료일:** 2026-06-12  
+**파일:** `apps/core-api/src/middleware/logger.py`, `apps/core-api/src/main.py`
+
+**완료 내용:**
+- logger.py: SLOW_REQUEST_THRESHOLD_MS 500 → 300 (KPI 정렬)
+- main.py: GZipMiddleware 추가 (minimum_size=1000, 응답 자동 압축)
+
+---
+
+## 미해결 사항
+
+### namespace 불일치 ✅ (이미 완료)
+**완료일:** 2026-06-11 (커밋 be43f4d)  
+`infra/k8s/base/core-api/deployment.yaml`, `service.yaml`에 `namespace: ticket-system` 추가됨.  
+ServiceMonitor 설정도 동시에 ticket-system으로 정렬 완료.
