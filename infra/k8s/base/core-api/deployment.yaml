@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: core-api
+  namespace: ticket-system
   labels:
     app: core-api
 spec:

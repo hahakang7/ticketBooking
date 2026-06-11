@@ -27,7 +27,7 @@ spec:
   type: ClusterIP
 ---
 # ── core-api ServiceMonitor ─────────────────────────────────────────────────
-# 대상: default 네임스페이스의 core-api Service (port http: 80 → pod:8000)
+# 대상: ticket-system 네임스페이스의 core-api Service (port http: 80 → pod:8000)
 # /metrics는 prometheus_fastapi_instrumentator가 pod:8000에서 서빙
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
@@ -40,7 +40,7 @@ metadata:
 spec:
   namespaceSelector:
     matchNames:
-      - default
+      - ticket-system
   selector:
     matchLabels:
       app: core-api
