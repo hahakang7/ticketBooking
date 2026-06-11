@@ -324,8 +324,10 @@ class ReservationService:
     })
     try:
       # 좌석 상태 변경 시 캐시 즉시 무효화
-      self.r.delete(CACHE_SEATS_KEY(event_id))
-      self.r.publish(channel, message)
+      pipe = self.r.pipeline()
+      pipe.delete(CACHE_SEATS_KEY(event_id))
+      pipe.publish(channel, message)
+      pipe.execute()
     except Exception as e:
       # Pub/Sub 실패는 예약 실패로 이어지지 않음 (best-effort)
       logger.warning(f"Pub/Sub publish failed: {e}")

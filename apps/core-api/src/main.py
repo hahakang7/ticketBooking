@@ -2,6 +2,7 @@ import asyncio
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 import logging
 
 from prometheus_fastapi_instrumentator import Instrumentator
@@ -171,6 +172,9 @@ app.add_middleware(
   allow_methods=["*"],
   allow_headers=["*"],
 )
+
+# 응답 압축
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 # 커스텀 미들웨어 (등록 역순으로 실행)
 app.add_middleware(RateLimiterMiddleware)
