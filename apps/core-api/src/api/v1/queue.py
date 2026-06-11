@@ -1,14 +1,19 @@
 import asyncio
 import json
+import logging
 from typing import AsyncGenerator
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request, status
 from fastapi.responses import StreamingResponse
 
+from src.database.db import SessionLocal
 from src.dependencies import get_redis, get_user_from_queue_token
 from src.schemas.common import ApiResponse
 from src.schemas.queue_schema import QueueJoinRequest, QueueJoinResponse, QueueStatusResponse
+from src.services.prediction_service import PredictionService
 from src.services.queue_service import QueueService
+
+logger = logging.getLogger("core-api")
 
 router = APIRouter(prefix="/api/queue", tags=["queue"])
 
@@ -17,10 +22,33 @@ def get_queue_service(r=Depends(get_redis)) -> QueueService:
   return QueueService(r)
 
 
+def _log_scaling_recommendation(event_id: str, r):
+  """대기열 최초 오픈 시 예측 모델 호출 및 로깅 (백그라운드 태스크)"""
+  try:
+    db = SessionLocal()
+    service = PredictionService(db, r)
+    plan = service.get_resource_plan(event_id)
+    # 로그는 service.get_resource_plan() 내에서 이미 출력됨
+  except Exception as e:
+    logger.error(f"[Prediction] Background task failed for event={event_id}: {e}")
+  finally:
+    db.close()
+
+
 @router.post("/join", response_model=ApiResponse[QueueJoinResponse], status_code=status.HTTP_200_OK)
-async def join_queue(body: QueueJoinRequest, service: QueueService = Depends(get_queue_service)):
-  """대기열 참가"""
+async def join_queue(
+  body: QueueJoinRequest,
+  background_tasks: BackgroundTasks,
+  service: QueueService = Depends(get_queue_service),
+  r=Depends(get_redis),
+):
+  """대기열 참가 (join 성공 시 예측 모델 백그라운드 실행)"""
   result = service.join_queue(body.user_id, body.event_id)
+
+  # 대기열 최초 오픈 시점(queue total == 1)에만 예측 실행
+  if result.get("total") == 1:
+    background_tasks.add_task(_log_scaling_recommendation, body.event_id, r)
+
   return ApiResponse(code=200, message="success", data=QueueJoinResponse(**result))
 
 
