@@ -1,0 +1,95 @@
+# Prometheus Operator ServiceMonitor 리소스 모음
+# 전제: kube-prometheus-stack (또는 prometheus-operator) 설치 필요
+#   helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+#   helm install prometheus prometheus-community/kube-prometheus-stack -n monitoring
+#
+# 적용: kubectl apply -f infra/prometheus/service-monitor.yaml
+# 검증: kubectl apply --dry-run=client -f infra/prometheus/service-monitor.yaml
+
+# ── redis-exporter 전용 Service ─────────────────────────────────────────────
+# OpsTree Redis Operator가 9121 포트를 Service로 노출하지 않으므로 별도 생성
+# redis-standalone CR이 생성하는 Pod 레이블: app=redis-standalone
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-exporter
+  namespace: default
+  labels:
+    app: redis-exporter
+spec:
+  selector:
+    app: redis-standalone
+  ports:
+    - name: metrics
+      port: 9121
+      targetPort: 9121
+      protocol: TCP
+  type: ClusterIP
+---
+# ── core-api ServiceMonitor ─────────────────────────────────────────────────
+# 대상: ticket-system 네임스페이스의 core-api Service (port http: 80 → pod:8000)
+# /metrics는 prometheus_fastapi_instrumentator가 pod:8000에서 서빙
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: core-api
+  namespace: monitoring
+  labels:
+    app: core-api
+    release: prometheus  # kube-prometheus-stack의 serviceMonitorSelector와 일치
+spec:
+  namespaceSelector:
+    matchNames:
+      - ticket-system
+  selector:
+    matchLabels:
+      app: core-api
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s
+---
+# ── websocket-service ServiceMonitor ────────────────────────────────────────
+# 대상: ticket-system 네임스페이스의 websocket-service (port http: 3000 → pod:3000)
+# /metrics는 prom-client register가 Express 라우트 GET /metrics에서 서빙
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: websocket-service
+  namespace: monitoring
+  labels:
+    app: websocket-service
+    release: prometheus
+spec:
+  namespaceSelector:
+    matchNames:
+      - ticket-system
+  selector:
+    matchLabels:
+      app: websocket-service
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s
+---
+# ── redis-exporter ServiceMonitor ───────────────────────────────────────────
+# 대상: 위에서 생성한 redis-exporter Service (port metrics: 9121)
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: redis-exporter
+  namespace: monitoring
+  labels:
+    app: redis-exporter
+    release: prometheus
+spec:
+  namespaceSelector:
+    matchNames:
+      - default
+  selector:
+    matchLabels:
+      app: redis-exporter
+  endpoints:
+    - port: metrics
+      path: /metrics
+      interval: 30s

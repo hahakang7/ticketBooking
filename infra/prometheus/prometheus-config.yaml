@@ -17,44 +17,8 @@ data:
         static_configs:
           - targets: ["localhost:9090"]
 
-      # Core API 수집 설정
-      - job_name: "core-api"
-        kubernetes_sd_configs:
-          - role: pod
-        relabel_configs:
-          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
-            action: keep
-            regex: "true"
-          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
-            action: replace
-            target_label: __metrics_path__
-            regex: (.+)
-          - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
-            action: replace
-            regex: ([^:]+)(?::\d+)?;(\d+)
-            replacement: $1:$2
-            target_label: __address__
-          - source_labels: [__meta_kubernetes_pod_label_app]
-            action: replace
-            target_label: app
-
-      # ✅ WebSocket 서비스 수집 설정 추가
-      - job_name: "websocket-service"
-        kubernetes_sd_configs:
-          - role: pod
-        relabel_configs:
-          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
-            action: keep
-            regex: "true"
-          # WebSocket Pod의 포트(3000)를 프로메테우스가 인식하도록 처리
-          - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
-            action: replace
-            regex: ([^:]+)(?::\d+)?;(\d+)
-            replacement: $1:$2
-            target_label: __address__
-          - source_labels: [__meta_kubernetes_pod_label_app]
-            action: replace
-            target_label: app
+      # core-api, websocket-service, redis-exporter 수집은
+      # infra/prometheus/service-monitor.yaml의 ServiceMonitor로 이관됨
 
       - job_name: "kubernetes-nodes"
         kubernetes_sd_configs:
