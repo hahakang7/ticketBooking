@@ -20,8 +20,24 @@ class ResourcePlanData(BaseModel):
 
 
 @router.post("/forecast", response_model=ApiResponse[ForecastData])
-async def get_forecast():
-    """부하 예측 Mock — k6 Flash Crowd 결과 기반 고정값 반환"""
+async def get_forecast(
+    event_id: str = Query(None, description="Event ID for LSTM-based prediction (optional)"),
+    db=Depends(get_db),
+    r=Depends(get_redis),
+):
+    """
+    트래픽 예측
+    - event_id 있으면: LSTM 실모델 기반 피크 RPS + 피크 시각 반환
+    - event_id 없으면: Mock 고정값 반환 (하위 호환성)
+    """
+    if event_id:
+        service = PredictionService(db, r)
+        result = service.get_forecast(event_id)
+        return ApiResponse(
+            code=200,
+            message="success",
+            data=ForecastData(**result),
+        )
     return ApiResponse(
         code=200,
         message="success",
