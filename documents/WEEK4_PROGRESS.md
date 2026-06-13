@@ -68,14 +68,30 @@ docker-compose --profile monitoring up -d
 
 ## Phase 2 — 팀원 1
 
-### ❌ Step 2-1. 예측 모델 Mock API 엔드포인트
-미착수
+### ✅ Step 2-1. 예측 모델 Mock API 엔드포인트
+**완료일:** 2026-06-12  
+**파일:** `apps/core-api/src/api/v1/prediction.py`, `apps/core-api/src/services/prediction_service.py`
 
-### ❌ Step 2-2. Grafana 대시보드 템플릿
-미착수 (`infra/monitoring/` 디렉터리 없음)
+- `GET /resource-plan`: event_id 파라미터 추가, PredictionService로 실모델 계산값 반환
+- event_id 없으면 mock 고정값 반환 (하위 호환성 유지)
+- Redis 5분 캐싱 (LSTM 반복 추론 방지), 싱글톤 초기화
 
-### ❌ Step 2-3. Flash Crowd 시나리오
-미착수 (`tests/k6/queue-load-test.js`에 `ramping-arrival-rate` 없음)
+### ✅ Step 2-2. Grafana 대시보드 템플릿
+**완료일:** 2026-06-13  
+**파일:** `infra/k8s/base/monitoring/grafana.yaml`, `infra/k8s/base/monitoring/prometheus.yaml`
+
+- Grafana 10.4.0 Deployment + LoadBalancer(포트 3030) k8s 배포
+- ConfigMap 자동 프로비저닝: datasource(Prometheus), dashboard-provider, dashboard JSON 내장
+- KPI 6개 패널: Queue 대기자 수, P95 응답시간, 에러율, WebSocket 연결 수, Pod CPU/Memory
+- Prometheus v2.51.0 + 5개 alerting group (latency/availability/queue/resource/websocket)
+- `infra/prometheus/` Docker Compose 기반 구버전 삭제 → k8s ConfigMap으로 완전 이관
+
+### ✅ Step 2-3. Flash Crowd 시나리오
+**완료일:** 2026-06-12 이전  
+**파일:** `tests/k6/queue-load-test.js`
+
+- `flash_crowd` 시나리오: `ramping-arrival-rate` executor 적용
+- `ramp_up_down` → `flash_crowd` 순차 실행 구성
 
 ---
 
@@ -92,7 +108,7 @@ docker-compose --profile monitoring up -d
 
 ---
 
-## Phase 2 — 팀원 2 (성능 최적화)
+## Phase 2 — 팀원 2 (성능 최적화 + 예측 모델 연동)
 
 ### ✅ Step 2-4. DB 인덱스 최적화
 **완료일:** 2026-06-12  
@@ -122,11 +138,67 @@ docker-compose --profile monitoring up -d
 - logger.py: SLOW_REQUEST_THRESHOLD_MS 500 → 300 (KPI 정렬)
 - main.py: GZipMiddleware 추가 (minimum_size=1000, 응답 자동 압축)
 
+### ✅ Step 2-7. 예측 모델 API 연동
+**완료일:** 2026-06-12  
+**파일:** `apps/core-api/src/services/prediction_service.py` (신규), `apps/core-api/src/api/v1/prediction.py`, `apps/core-api/src/api/v1/queue.py`
+
+- `PredictionService.get_resource_plan(event_id)`: Event 조회 → TrafficForecaster.predict() → ResourceCalculator.calculate()
+- `POST /join` 대기열 최초 오픈 시 BackgroundTasks로 예측 실행 (응답 지연 없음)
+- 로그 출력: `[Prediction] event=... → recommend N replicas`
+
 ---
 
-## 미해결 사항
+## Phase 2 — 추가 완료 (2026-06-13)
 
-### namespace 불일치 ✅ (이미 완료)
-**완료일:** 2026-06-11 (커밋 be43f4d)  
-`infra/k8s/base/core-api/deployment.yaml`, `service.yaml`에 `namespace: ticket-system` 추가됨.  
-ServiceMonitor 설정도 동시에 ticket-system으로 정렬 완료.
+### ✅ LSTM 콜드스타트 제거
+**완료일:** 2026-06-13  
+**파일:** `apps/core-api/Dockerfile`, `infra/k8s/base/core-api/deployment.yaml`
+
+- Dockerfile 빌드 시점에 `python -m src.prediction.traffic_forecaster`로 모델 학습 후 `/app/models/traffic_model.pt` 저장
+- 파드 기동 시 학습 불필요 → 헬스체크 실패 위험 제거
+- `PREDICTION_MODEL_PATH` 환경변수 명시 (경로 계산 버그 방지)
+
+### ✅ POST /prediction/forecast 실모델 연결
+**완료일:** 2026-06-13  
+**파일:** `apps/core-api/src/api/v1/prediction.py`, `apps/core-api/src/services/prediction_service.py`
+
+- `get_forecast()` 메서드 신규 추가: mc_samples=10, 피크 RPS → expected_users/peak_time 변환
+- Redis 캐시 5분 TTL 적용, event_id 없으면 Mock 반환 (하위 호환성)
+- 검증: `event_id=c01e8f13-...` → `expected_users=3313, peak_time=18:00` 정상 반환
+
+### ✅ core-api 메모리/HPA 조정
+**완료일:** 2026-06-13  
+**파일:** `infra/k8s/base/core-api/deployment.yaml`, `infra/k8s/autoscaling/core-api-hpa.yaml`
+
+- LSTM 모델 이미지 내장 후 실제 메모리 ~400Mi로 증가
+- `memory requests`: 128Mi → 450Mi (실사용량 기반)
+- HPA `memory threshold`: 80% → 90% (400Mi/450Mi=88% 평시 안정)
+
+### ✅ 전체 namespace 통일 (default → ticket-system)
+**완료일:** 2026-06-13  
+**파일:** `infra/k8s/base/**/*.yaml` (14개), `infra/k8s/autoscaling/*.yaml`
+
+- setup.sh가 `-n ticket-system`으로 배포하나 manifest에 `namespace: default` 하드코딩 → 충돌 수정
+- `infra/k8s/base/shared/redis.yaml` 신규 생성, `infra/k8s/base/prediction-service/deployment.yaml` 신규 생성
+- `infra/k8s/base/monitoring/*.yaml` 한글 문자 깨짐 수정 + namespace 변경
+
+---
+
+## 완료 현황 요약
+
+| Step | 담당 | 상태 | 완료일 |
+|------|------|------|--------|
+| 1-1 Ingress WebSocket Sticky Session | 팀원 1 | ✅ | 2026-06-10 |
+| 1-2 Prometheus ServiceMonitor | 팀원 1 | ✅ | 2026-06-10 |
+| 2-1 예측 모델 Mock API | 팀원 1 | ✅ | 2026-06-12 |
+| 2-2 Grafana 대시보드 | 팀원 1 | ✅ | 2026-06-13 |
+| 2-3 Flash Crowd 시나리오 | 팀원 1 | ✅ | 2026-06-12 이전 |
+| 2-4 DB 인덱스 최적화 | 팀원 2 | ✅ | 2026-06-12 |
+| 2-5 Redis 파이프라인 | 팀원 2 | ✅ | 2026-06-12 |
+| 2-6 성능 설정 | 팀원 2 | ✅ | 2026-06-12 |
+| 2-7 예측 모델 API 연동 | 팀원 2 | ✅ | 2026-06-12 |
+| 2-8 SeatMap 실시간 좌석 색상 | 팀원 3 | ✅ | — |
+| 2-9 전체 플로우 라우팅 연결 | 팀원 3 | ✅ | — |
+| 2-10 프론트엔드 번들 최적화 | 팀원 3 | ⚠️ | 부분 완료 |
+
+**미완료:** Step 2-10 rollup-plugin-visualizer 미설치
