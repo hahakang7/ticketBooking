@@ -88,14 +88,19 @@ TLS도 분리: ws 전용 `ticket-ws-tls` secret 사용.
 
 ---
 
-#### ❌ Step 2-2. Grafana 대시보드 템플릿 생성
-**파일:** `infra/monitoring/` (현재 빈 폴더)  
-**목적:** 발표 시 실시간 메트릭 시각화 필요.
+#### ✅ Step 2-2. Grafana 대시보드 템플릿 생성
+**파일:** `infra/k8s/base/monitoring/grafana.yaml`  
+**완료일:** 2026-06-13
 
-생성할 파일:
-- `infra/monitoring/grafana-dashboard.json` — queue 대기자 수, P95 응답 시간, 에러율, WebSocket 연결 수, Pod CPU/Memory 6개 패널
-
-기존 `infra/prometheus/local/alert-rules.yaml`의 메트릭명 재활용.
+**완료 내용:**
+- k8s ConfigMap 자동 프로비저닝 방식으로 구현 (infra/monitoring/ 폴더 방식 → k8s 통일)
+- KPI 6개 패널 대시보드 (`infra/k8s/base/monitoring/grafana.yaml` 내 ConfigMap):
+  - Queue 대기자 수, P95 응답시간, 에러율, WebSocket 연결 수, Pod CPU/Memory
+- Grafana 10.4.0 Deployment + LoadBalancer(3030) 배포
+- Datasource 자동 연결: `http://prometheus:9090`
+- 관리자 계정: admin / 1q2w3e → **http://localhost:3030**
+- Prometheus v2.51.0도 함께 k8s 배포 (5개 alerting group, LoadBalancer:9090)
+- infra/prometheus/ 구버전 삭제, infra/k8s/base/monitoring/으로 완전 이관
 
 ---
 
@@ -329,7 +334,7 @@ curl http://localhost:3000/health
 | slow request 임계값 500ms→300ms | 팀원 2 | ✅ 완료 (2026-06-12) | KPI와 logger 기준 일치 필요 |
 | 전체 여정 라우팅 연결 검증 | 팀원 3 | ✅ 완료 | SeatSelectionPage 미존재로 흐름 끊길 수 있음 |
 | 대기열→좌석 자동 이동 처리 | 팀원 3 | ✅ 완료 | queue_token 발급 후 페이지 전환 미구현 가능성 |
-| Grafana 대시보드 JSON 생성 | 팀원 1 | ❌ 미완료 | 발표 시 실시간 메트릭 시각화 필요 |
+| Grafana 대시보드 JSON 생성 | 팀원 1 | ✅ 완료 (2026-06-13) | k8s ConfigMap 방식으로 구현, http://localhost:3030 |
 | Docker Compose E2E 통합 실행 | 팀원 1 주도 | ❌ 미완료 | 개별 서비스는 됐지만 통합 기동 미검증 |
 | `infra/k8s/base/core-api/` namespace 불일치 수정 | 팀원 1 | ✅ 완료 (2026-06-11) | 커밋 `be43f4d`에서 이미 수정 완료 |
 
