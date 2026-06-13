@@ -1,8 +1,8 @@
-apiVersion: v1
+﻿apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: postgres-data
-  namespace: default
+  namespace: ticket-system
 spec:
   accessModes:
     - ReadWriteOnce
@@ -14,7 +14,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: postgres
-  namespace: default
+  namespace: ticket-system
   labels:
     app: postgres
 spec:
@@ -64,7 +64,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: postgres
-  namespace: default
+  namespace: ticket-system
   labels:
     app: postgres
 spec:

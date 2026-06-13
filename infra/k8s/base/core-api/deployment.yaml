@@ -1,8 +1,8 @@
-apiVersion: apps/v1
+﻿apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: core-api
-  namespace: default
+  namespace: ticket-system
   labels:
     app: core-api
 spec:

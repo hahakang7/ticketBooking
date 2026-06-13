@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: prometheus-config
-  namespace: default
+  namespace: ticket-system
 data:
   prometheus.yml: |
     global:
@@ -43,8 +43,7 @@ data:
             labels:
               severity: warning
             annotations:
-              summary: "P95 응답 시간 300ms 초과"
-              description: "현재 P95: {{ $value | humanizeDuration }}"
+              summary: "P95 response time exceeded 300ms"
           - alert: CriticalP95Latency
             expr: |
               histogram_quantile(0.95,
@@ -54,8 +53,7 @@ data:
             labels:
               severity: critical
             annotations:
-              summary: "P95 응답 시간 1초 초과"
-              description: "현재 P95: {{ $value | humanizeDuration }}"
+              summary: "P95 response time exceeded 1s"
 
       - name: availability_alerts
         interval: 30s
@@ -66,14 +64,14 @@ data:
             labels:
               severity: critical
             annotations:
-              summary: "Core API 서버 다운"
+              summary: "Core API down"
           - alert: WebSocketServiceDown
             expr: up{job="websocket-service"} == 0
             for: 1m
             labels:
               severity: critical
             annotations:
-              summary: "WebSocket 서버 다운"
+              summary: "WebSocket service down"
           - alert: HighErrorRate
             expr: |
               rate(http_requests_total{status=~"5.."}[5m])
@@ -82,8 +80,7 @@ data:
             labels:
               severity: warning
             annotations:
-              summary: "에러율 1% 초과"
-              description: "현재 에러율: {{ $value | humanizePercentage }}"
+              summary: "Error rate exceeded 1%"
 
       - name: queue_alerts
         interval: 15s
@@ -94,14 +91,14 @@ data:
             labels:
               severity: warning
             annotations:
-              summary: "대기열 10,000명 초과"
+              summary: "Queue exceeded 10,000"
           - alert: DuplicateReservationDetected
             expr: increase(duplicate_reservation_total[5m]) > 0
             for: 0m
             labels:
               severity: critical
             annotations:
-              summary: "중복 예매 발생 — 즉시 확인 필요"
+              summary: "Duplicate reservation detected"
 
       - name: resource_alerts
         interval: 30s
@@ -112,7 +109,7 @@ data:
             labels:
               severity: warning
             annotations:
-              summary: "CPU 80% 초과"
+              summary: "CPU exceeded 80%"
           - alert: HighMemoryUsage
             expr: |
               container_memory_usage_bytes{container!=""}
@@ -121,14 +118,14 @@ data:
             labels:
               severity: warning
             annotations:
-              summary: "메모리 85% 초과"
+              summary: "Memory exceeded 85%"
           - alert: RedisDown
             expr: up{job="redis-exporter"} == 0
             for: 1m
             labels:
               severity: critical
             annotations:
-              summary: "Redis 서버 다운"
+              summary: "Redis down"
 
       - name: websocket_alerts
         interval: 15s
@@ -139,20 +136,20 @@ data:
             labels:
               severity: warning
             annotations:
-              summary: "WebSocket 메시지 지연 100ms 초과"
+              summary: "WebSocket message delay exceeded 100ms"
           - alert: TooManyWebSocketDisconnects
             expr: rate(websocket_disconnections_total[5m]) > 100
             for: 2m
             labels:
               severity: warning
             annotations:
-              summary: "WebSocket 연결 해제 급증"
+              summary: "WebSocket disconnect spike"
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: prometheus
-  namespace: default
+  namespace: ticket-system
   labels:
     app: prometheus
 spec:
@@ -200,7 +197,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: prometheus
-  namespace: default
+  namespace: ticket-system
   labels:
     app: prometheus
 spec:
