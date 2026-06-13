@@ -6,7 +6,6 @@ from fastapi.middleware.gzip import GZipMiddleware
 import logging
 
 from prometheus_fastapi_instrumentator import Instrumentator
-from prometheus_client import Counter as PromCounter
 from src.metrics import duplicate_reservation_total
 
 from src.config import get_settings
@@ -15,48 +14,6 @@ from src.api.v1 import health, events, queue, seats, reservations, payments, pre
 from src.middleware import ErrorHandlerMiddleware, LoggerMiddleware, RateLimiterMiddleware
 from src.redis.client import redis_client
 
-# 로깅 설정
-logging.basicConfig(
-  level=logging.INFO,
-  format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-)
-logger = logging.getLogger("core-api")
-
-settings = get_settings()
-
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-  """앱 시작/종료 관리"""
-  logger.info("Application startup")
-
-  try:
-    from src.database.db import SessionLocal
-    db = SessionLocal()
-    from sqlalchemy import text
-    db.execute(text("SELECT 1"))
-    db.close()
-    logger.info("Database connection successful")
-  except Exception as e:
-    logger.error(f"Database connection failed: {e}")
-
-  try:
-    redis_client.ping()
-    logger.info("Redis connection successful")
-  except Exception as e:
-    logger.error(f"Redis connection failed: {e}")
-
-  yield
-
-  logger.info("Application shutdown")
-  try:
-    redis_client.close()
-  except Exception as e:
-    logger.error(f"Redis close failed: {e}")
-
-
-
-# 로깅 설정
 logging.basicConfig(
   level=logging.INFO,
   format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",

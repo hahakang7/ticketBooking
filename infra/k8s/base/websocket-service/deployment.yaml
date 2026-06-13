@@ -1,4 +1,4 @@
-apiVersion: apps/v1
+﻿apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: websocket-service
@@ -19,43 +19,48 @@ spec:
     spec:
       containers:
       - name: websocket
-        image: 076812850421.dkr.ecr.ap-northeast-2.amazonaws.com/websocket-service:latest
-        imagePullPolicy: IfNotPresent
+        image: ticketbooking-websocket-service:latest
+        imagePullPolicy: Never
         ports:
         - containerPort: 3000
           name: http
           protocol: TCP
         env:
         - name: NODE_ENV
-          value: "production"
+          value: "development"
         - name: PORT
           value: "3000"
         - name: HOST
           value: "0.0.0.0"
         - name: REDIS_HOST
-          value: "redis-service"
+          value: "redis"
         - name: REDIS_PORT
           value: "6379"
         - name: REDIS_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: redis-secret
-              key: password
+          value: ""
         - name: CORS_ORIGIN
-          value: "https://example.com"
+          value: "http://localhost:3001"
         - name: API_BASE_URL
-          value: "http://core-api-service:8000"
+          value: "http://core-api:8000"
         - name: LOG_LEVEL
           value: "info"
-
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: SECRET_KEY
+        - name: INTERNAL_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: INTERNAL_SECRET
         resources:
           requests:
-            cpu: 100m
-            memory: 128Mi
+            cpu: 50m
+            memory: 64Mi
           limits:
             cpu: 500m
             memory: 512Mi
-
         livenessProbe:
           httpGet:
             path: /health
@@ -64,7 +69,6 @@ spec:
           periodSeconds: 10
           timeoutSeconds: 5
           failureThreshold: 3
-
         readinessProbe:
           httpGet:
             path: /health
@@ -73,7 +77,6 @@ spec:
           periodSeconds: 5
           timeoutSeconds: 3
           failureThreshold: 2
-
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
