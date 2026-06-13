@@ -1,0 +1,144 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-datasource
+  namespace: default
+data:
+  prometheus.yaml: |
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        type: prometheus
+        uid: ticket-booking-prometheus
+        url: http://prometheus:9090
+        access: proxy
+        isDefault: true
+        editable: false
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-provider
+  namespace: default
+data:
+  dashboard.yaml: |
+    apiVersion: 1
+    providers:
+      - name: ticket-booking
+        type: file
+        disableDeletion: false
+        updateIntervalSeconds: 30
+        options:
+          path: /var/lib/grafana/dashboards
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard
+  namespace: default
+data:
+  ticket-booking.json: |
+    {
+      "__inputs": [{"name":"DS_PROMETHEUS","label":"Prometheus","description":"","type":"datasource","pluginId":"prometheus","pluginName":"Prometheus"}],
+      "__requires": [{"type":"grafana","id":"grafana","name":"Grafana","version":"10.0.0"},{"type":"datasource","id":"prometheus","name":"Prometheus","version":"1.0.0"},{"type":"panel","id":"timeseries","name":"Time series","version":""},{"type":"panel","id":"stat","name":"Stat","version":""}],
+      "description": "Ticket Booking System — 발표용 실시간 메트릭 대시보드 (Week 4 KPI 기준)",
+      "editable": true,
+      "graphTooltip": 1,
+      "id": null,
+      "links": [],
+      "panels": [
+        {"id":1,"title":"Queue 대기자 수","description":"Redis Sorted Set 기반 대기열 현재 인원 (KPI: 10,000명 이하)","type":"timeseries","gridPos":{"x":0,"y":0,"w":12,"h":8},"datasource":{"type":"prometheus","uid":"ticket-booking-prometheus"},"targets":[{"expr":"sum(redis_key_size{key=~\"queue:.*\"}) or vector(0)","legendFormat":"전체 대기열","refId":"A"}],"fieldConfig":{"defaults":{"unit":"short","displayName":"대기자 수","color":{"mode":"palette-classic"},"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null},{"color":"yellow","value":5000},{"color":"red","value":10000}]},"custom":{"lineWidth":2,"fillOpacity":15,"showPoints":"never"}}},"options":{"tooltip":{"mode":"single"},"legend":{"displayMode":"list"}}},
+        {"id":2,"title":"P95 응답 시간","description":"core-api HTTP 요청 P95 응답시간 (KPI: 300ms 이하)","type":"timeseries","gridPos":{"x":12,"y":0,"w":12,"h":8},"datasource":{"type":"prometheus","uid":"ticket-booking-prometheus"},"targets":[{"expr":"histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job=\"core-api\"}[5m])) * 1000","legendFormat":"P95 (ms)","refId":"A"},{"expr":"histogram_quantile(0.50, rate(http_request_duration_seconds_bucket{job=\"core-api\"}[5m])) * 1000","legendFormat":"P50 (ms)","refId":"B"}],"fieldConfig":{"defaults":{"unit":"ms","color":{"mode":"palette-classic"},"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null},{"color":"yellow","value":200},{"color":"red","value":300}]},"custom":{"lineWidth":2,"fillOpacity":10,"showPoints":"never","thresholdsStyle":{"mode":"line"}}}},"options":{"tooltip":{"mode":"multi"},"legend":{"displayMode":"list"}}},
+        {"id":3,"title":"에러율","description":"5xx 에러 비율 (KPI: 1% 이하)","type":"timeseries","gridPos":{"x":0,"y":8,"w":12,"h":8},"datasource":{"type":"prometheus","uid":"ticket-booking-prometheus"},"targets":[{"expr":"rate(http_requests_total{status=~\"5..\"}[5m]) / rate(http_requests_total[5m]) * 100","legendFormat":"에러율 (%)","refId":"A"}],"fieldConfig":{"defaults":{"unit":"percent","min":0,"color":{"mode":"fixed","fixedColor":"red"},"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null},{"color":"yellow","value":0.5},{"color":"red","value":1}]},"custom":{"lineWidth":2,"fillOpacity":20,"showPoints":"never","thresholdsStyle":{"mode":"line"}}}},"options":{"tooltip":{"mode":"single"},"legend":{"displayMode":"list"}}},
+        {"id":4,"title":"WebSocket 연결 수","description":"현재 활성 WebSocket 연결 수 (KPI: 10,000+ 동시 연결)","type":"timeseries","gridPos":{"x":12,"y":8,"w":12,"h":8},"datasource":{"type":"prometheus","uid":"ticket-booking-prometheus"},"targets":[{"expr":"sum(ws_connections_active) or vector(0)","legendFormat":"활성 연결","refId":"A"},{"expr":"rate(websocket_disconnections_total[5m])","legendFormat":"연결 해제 rate (/s)","refId":"B"}],"fieldConfig":{"defaults":{"unit":"short","color":{"mode":"palette-classic"},"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null},{"color":"yellow","value":8000},{"color":"red","value":10000}]},"custom":{"lineWidth":2,"fillOpacity":15,"showPoints":"never"}}},"options":{"tooltip":{"mode":"multi"},"legend":{"displayMode":"list"}}},
+        {"id":5,"title":"Pod CPU 사용률","description":"core-api / websocket-service 컨테이너 CPU (K8s cAdvisor 메트릭)","type":"timeseries","gridPos":{"x":0,"y":16,"w":12,"h":8},"datasource":{"type":"prometheus","uid":"ticket-booking-prometheus"},"targets":[{"expr":"rate(container_cpu_usage_seconds_total{container=~\"core-api|websocket-service\", container!=\"\"}[5m]) * 100","legendFormat":"{{container}} ({{pod}})","refId":"A"}],"fieldConfig":{"defaults":{"unit":"percent","min":0,"max":100,"color":{"mode":"palette-classic"},"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null},{"color":"yellow","value":70},{"color":"red","value":85}]},"custom":{"lineWidth":1,"fillOpacity":10,"showPoints":"never","thresholdsStyle":{"mode":"line"}}}},"options":{"tooltip":{"mode":"multi"},"legend":{"displayMode":"table","placement":"bottom"}}},
+        {"id":6,"title":"Pod Memory 사용량","description":"core-api / websocket-service 컨테이너 메모리 (K8s cAdvisor 메트릭)","type":"timeseries","gridPos":{"x":12,"y":16,"w":12,"h":8},"datasource":{"type":"prometheus","uid":"ticket-booking-prometheus"},"targets":[{"expr":"container_memory_usage_bytes{container=~\"core-api|websocket-service\", container!=\"\"} / 1024 / 1024","legendFormat":"{{container}} ({{pod}})","refId":"A"}],"fieldConfig":{"defaults":{"unit":"MiB","min":0,"color":{"mode":"palette-classic"},"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null},{"color":"yellow","value":400},{"color":"red","value":480}]},"custom":{"lineWidth":1,"fillOpacity":10,"showPoints":"never","thresholdsStyle":{"mode":"line"}}}},"options":{"tooltip":{"mode":"multi"},"legend":{"displayMode":"table","placement":"bottom"}}}
+      ],
+      "refresh": "5s",
+      "schemaVersion": 38,
+      "tags": ["ticket-booking","week4","kpi"],
+      "templating": {"list":[{"current":{"selected":false,"text":"Prometheus","value":"prometheus"},"hide":0,"includeAll":false,"multi":false,"name":"DS_PROMETHEUS","options":[],"query":"prometheus","refresh":1,"type":"datasource"}]},
+      "time": {"from":"now-15m","to":"now"},
+      "timepicker": {},
+      "timezone": "Asia/Seoul",
+      "title": "Ticket Booking System — KPI 모니터링",
+      "uid": "ticket-booking-week4",
+      "version": 1
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+  namespace: default
+  labels:
+    app: grafana
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      labels:
+        app: grafana
+    spec:
+      containers:
+      - name: grafana
+        image: grafana/grafana:10.4.0
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 3000
+        env:
+        - name: GF_SECURITY_ADMIN_USER
+          value: "admin"
+        - name: GF_SECURITY_ADMIN_PASSWORD
+          value: "1q2w3e"
+        - name: GF_AUTH_ANONYMOUS_ENABLED
+          value: "false"
+        volumeMounts:
+        - name: datasource
+          mountPath: /etc/grafana/provisioning/datasources
+        - name: dashboard-provider
+          mountPath: /etc/grafana/provisioning/dashboards
+        - name: dashboard-json
+          mountPath: /var/lib/grafana/dashboards
+        resources:
+          requests:
+            cpu: 50m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: 3000
+          initialDelaySeconds: 15
+          periodSeconds: 10
+      volumes:
+      - name: datasource
+        configMap:
+          name: grafana-datasource
+      - name: dashboard-provider
+        configMap:
+          name: grafana-dashboard-provider
+      - name: dashboard-json
+        configMap:
+          name: grafana-dashboard
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana
+  namespace: default
+  labels:
+    app: grafana
+spec:
+  type: LoadBalancer
+  selector:
+    app: grafana
+  ports:
+  - name: http
+    port: 3030
+    targetPort: 3000

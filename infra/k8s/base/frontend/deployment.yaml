@@ -2,12 +2,12 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: frontend
-  namespace: ticket-system
+  namespace: default
   labels:
     app: frontend
     tier: presentation
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: frontend
@@ -19,18 +19,12 @@ spec:
     spec:
       containers:
       - name: frontend
-        image: 076812850421.dkr.ecr.ap-northeast-2.amazonaws.com/frontend:latest
-        imagePullPolicy: IfNotPresent
+        image: ticketbooking-frontend:latest
+        imagePullPolicy: Never
         ports:
         - containerPort: 3001
           name: http
           protocol: TCP
-        env:
-        - name: VITE_API_BASE_URL
-          value: "https://api.example.com"
-        - name: VITE_SOCKET_URL
-          value: "https://ws.example.com"
-
         resources:
           requests:
             cpu: 50m
@@ -38,7 +32,6 @@ spec:
           limits:
             cpu: 200m
             memory: 256Mi
-
         livenessProbe:
           httpGet:
             path: /
@@ -47,7 +40,6 @@ spec:
           periodSeconds: 10
           timeoutSeconds: 5
           failureThreshold: 3
-
         readinessProbe:
           httpGet:
             path: /

@@ -2,23 +2,12 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: app-config
+  namespace: default
 data:
-  # Core API 설정
   DEBUG: "false"
   LOG_LEVEL: "info"
-
-  # Database 설정
   DATABASE_URL: "postgresql://user:password@postgres:5432/booking_system"
-
-  # Redis 설정
   REDIS_URL: "redis://redis:6379"
-
-  # WebSocket 설정
-  WEBSOCKET_ORIGIN: "https://example.com"
+  WEBSOCKET_ORIGIN: "http://localhost:3001"
   WEBSOCKET_HEARTBEAT: "25000"
   WEBSOCKET_TIMEOUT: "60000"
-
-  # Frontend 설정
-  VITE_API_URL: "https://api.example.com"
-  VITE_WS_URL: "wss://ws.example.com"
-  VITE_ENV: "production"

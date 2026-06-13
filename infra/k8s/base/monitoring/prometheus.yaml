@@ -1,0 +1,213 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: default
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 15s
+
+    rule_files:
+      - /etc/prometheus/alert-rules.yaml
+
+    scrape_configs:
+      - job_name: core-api
+        static_configs:
+          - targets: ['core-api:8000']
+
+      - job_name: websocket-service
+        static_configs:
+          - targets: ['websocket-service:3000']
+
+      - job_name: redis-exporter
+        static_configs:
+          - targets: ['redis-exporter:9121']
+
+      - job_name: prediction-service
+        static_configs:
+          - targets: ['prediction-service:8001']
+
+  alert-rules.yaml: |
+    groups:
+      - name: latency_alerts
+        interval: 30s
+        rules:
+          - alert: HighP95Latency
+            expr: |
+              histogram_quantile(0.95,
+                rate(http_request_duration_seconds_bucket{job="core-api"}[5m])
+              ) > 0.3
+            for: 2m
+            labels:
+              severity: warning
+            annotations:
+              summary: "P95 응답 시간 300ms 초과"
+              description: "현재 P95: {{ $value | humanizeDuration }}"
+          - alert: CriticalP95Latency
+            expr: |
+              histogram_quantile(0.95,
+                rate(http_request_duration_seconds_bucket{job="core-api"}[5m])
+              ) > 1.0
+            for: 1m
+            labels:
+              severity: critical
+            annotations:
+              summary: "P95 응답 시간 1초 초과"
+              description: "현재 P95: {{ $value | humanizeDuration }}"
+
+      - name: availability_alerts
+        interval: 30s
+        rules:
+          - alert: CoreApiDown
+            expr: up{job="core-api"} == 0
+            for: 1m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Core API 서버 다운"
+          - alert: WebSocketServiceDown
+            expr: up{job="websocket-service"} == 0
+            for: 1m
+            labels:
+              severity: critical
+            annotations:
+              summary: "WebSocket 서버 다운"
+          - alert: HighErrorRate
+            expr: |
+              rate(http_requests_total{status=~"5.."}[5m])
+              / rate(http_requests_total[5m]) > 0.01
+            for: 2m
+            labels:
+              severity: warning
+            annotations:
+              summary: "에러율 1% 초과"
+              description: "현재 에러율: {{ $value | humanizePercentage }}"
+
+      - name: queue_alerts
+        interval: 15s
+        rules:
+          - alert: QueueSizeTooLarge
+            expr: redis_zset_length{key=~"queue:.*"} > 10000
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "대기열 10,000명 초과"
+          - alert: DuplicateReservationDetected
+            expr: increase(duplicate_reservation_total[5m]) > 0
+            for: 0m
+            labels:
+              severity: critical
+            annotations:
+              summary: "중복 예매 발생 — 즉시 확인 필요"
+
+      - name: resource_alerts
+        interval: 30s
+        rules:
+          - alert: HighCpuUsage
+            expr: rate(container_cpu_usage_seconds_total{container!=""}[5m]) > 0.8
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "CPU 80% 초과"
+          - alert: HighMemoryUsage
+            expr: |
+              container_memory_usage_bytes{container!=""}
+              / container_spec_memory_limit_bytes{container!=""} > 0.85
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "메모리 85% 초과"
+          - alert: RedisDown
+            expr: up{job="redis-exporter"} == 0
+            for: 1m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Redis 서버 다운"
+
+      - name: websocket_alerts
+        interval: 15s
+        rules:
+          - alert: WebSocketMessageDelayHigh
+            expr: histogram_quantile(0.95, rate(websocket_message_latency_seconds_bucket[5m])) > 0.1
+            for: 2m
+            labels:
+              severity: warning
+            annotations:
+              summary: "WebSocket 메시지 지연 100ms 초과"
+          - alert: TooManyWebSocketDisconnects
+            expr: rate(websocket_disconnections_total[5m]) > 100
+            for: 2m
+            labels:
+              severity: warning
+            annotations:
+              summary: "WebSocket 연결 해제 급증"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus
+  namespace: default
+  labels:
+    app: prometheus
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prometheus
+  template:
+    metadata:
+      labels:
+        app: prometheus
+    spec:
+      containers:
+      - name: prometheus
+        image: prom/prometheus:v2.51.0
+        imagePullPolicy: IfNotPresent
+        args:
+          - '--config.file=/etc/prometheus/prometheus.yml'
+          - '--storage.tsdb.retention.time=7d'
+          - '--web.enable-lifecycle'
+        ports:
+        - containerPort: 9090
+        volumeMounts:
+        - name: config
+          mountPath: /etc/prometheus
+        resources:
+          requests:
+            cpu: 50m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        readinessProbe:
+          httpGet:
+            path: /-/ready
+            port: 9090
+          initialDelaySeconds: 10
+          periodSeconds: 10
+      volumes:
+      - name: config
+        configMap:
+          name: prometheus-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus
+  namespace: default
+  labels:
+    app: prometheus
+spec:
+  type: LoadBalancer
+  selector:
+    app: prometheus
+  ports:
+  - name: http
+    port: 9090
+    targetPort: 9090

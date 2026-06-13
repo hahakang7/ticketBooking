@@ -2,7 +2,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: core-api
-  namespace: ticket-system
+  namespace: default
   labels:
     app: core-api
 spec:
@@ -10,7 +10,7 @@ spec:
     app: core-api
   ports:
     - name: http
-      port: 80
+      port: 8000
       targetPort: 8000
       protocol: TCP
-  type: ClusterIP
+  type: LoadBalancer
