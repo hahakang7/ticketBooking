@@ -25,6 +25,9 @@ spec:
           imagePullPolicy: Never
           ports:
             - containerPort: 8000
+          env:
+            - name: PREDICTION_MODEL_PATH
+              value: "/app/models/traffic_model.pt"
           envFrom:
             - configMapRef:
                 name: app-config
