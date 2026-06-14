@@ -8,28 +8,6 @@ from src.redis.queue import add_to_queue, get_position, consume_from_queue_atomi
 logger = logging.getLogger("core-api")
 
 
-@pytest.fixture
-def mock_redis():
-  r = MagicMock()
-  r.zadd.return_value = 1
-  r.expire.return_value = True
-  r.zrank.return_value = None
-  r.zcard.return_value = 0
-  r.zrem.return_value = 0
-  r.incr.return_value = 1
-  return r
-
-
-@pytest.fixture
-def app_client(mock_redis):
-  with patch("src.redis.client.redis_client", mock_redis), \
-       patch("src.dependencies.redis_client", mock_redis), \
-       patch("src.middleware.rate_limiter.redis_client", mock_redis):
-    from src.main import app
-    client = TestClient(app, raise_server_exceptions=False)
-    yield client, mock_redis
-
-
 class TestQueueService:
   def test_join_queue_new_user(self, mock_redis):
     """신규 사용자 대기열 참가: ZADD 호출 후 position 1 반환"""
@@ -229,6 +207,63 @@ class TestQueueAPI:
     assert response.status_code == 200
     assert "text/event-stream" in response.headers.get("content-type", "")
     assert response.headers.get("cache-control") == "no-cache"
+
+  def test_delete_leave_without_auth(self, app_client):
+    """queue_token 없이 /leave 접근 → 401"""
+    logger.info("DELETE /api/queue/leave: 토큰 없이 접근 → 401 반환 확인")
+    client, mock_redis = app_client
+    response = client.delete("/api/queue/leave?user_id=u1&event_id=e1")
+    assert response.status_code == 401
+
+  def test_delete_leave_user_mismatch(self, app_client):
+    """query user_id와 token user_id 불일치 → 403"""
+    logger.info("DELETE /api/queue/leave: 토큰 user_id ≠ query user_id → 403 반환 확인")
+    from src.auth.token import create_queue_token
+
+    client, mock_redis = app_client
+    token = create_queue_token("u1", "e1", 5)
+
+    response = client.delete(
+      "/api/queue/leave?user_id=u2&event_id=e1",
+      headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 403
+
+  def test_delete_leave_success(self, app_client):
+    """대기열 이탈 성공: queue_token + user_id 일치 + 대기열에 존재"""
+    logger.info("DELETE /api/queue/leave: 정상 토큰 + 대기열에 있음 → 200 확인")
+    from src.auth.token import create_queue_token
+
+    client, mock_redis = app_client
+    token = create_queue_token("u1", "e1", 5)
+    mock_redis.zrem.return_value = 1  # 대기열에서 제거됨
+
+    response = client.delete(
+      "/api/queue/leave?user_id=u1&event_id=e1",
+      headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["code"] == 200
+    assert data["message"] == "success"
+    mock_redis.zrem.assert_called_once()
+
+  def test_delete_leave_not_in_queue(self, app_client):
+    """대기열에 없는 사용자: queue_token 유효하지만 zrem 반환 0"""
+    logger.info("DELETE /api/queue/leave: 대기열에 없음 → 404 반환 확인")
+    from src.auth.token import create_queue_token
+
+    client, mock_redis = app_client
+    token = create_queue_token("u1", "e1", 5)
+    mock_redis.zrem.return_value = 0  # 대기열에 없음
+
+    response = client.delete(
+      "/api/queue/leave?user_id=u1&event_id=e1",
+      headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 404
+    data = response.json()
+    assert data["code"] == 404
 
 
 class TestTokenAuth:

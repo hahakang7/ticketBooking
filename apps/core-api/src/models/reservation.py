@@ -23,4 +23,5 @@ class Reservation(Base):
 
   __table_args__ = (
     Index("idx_reservations_user_created", "user_id", "created_at"),
+    Index("idx_reservations_status_expires", "status", "expires_at"),
   )

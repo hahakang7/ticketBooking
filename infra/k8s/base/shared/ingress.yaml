@@ -2,6 +2,7 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: ticket-system-ingress
+  namespace: ticket-system
   annotations:
     kubernetes.io/ingress.class: nginx
     cert-manager.io/cluster-issuer: letsencrypt-prod
@@ -9,7 +10,6 @@ spec:
   tls:
     - hosts:
         - api.example.com
-        - ws.example.com
         - example.com
       secretName: ticket-system-tls
   rules:
@@ -21,23 +21,6 @@ spec:
             backend:
               service:
                 name: core-api
-                port:
-                  number: 80
-    - host: ws.example.com
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: websocket-service
-                port:
-                  number: 80
-          - path: /socket.io
-            pathType: Prefix
-            backend:
-              service:
-                name: websocket-service
                 port:
                   number: 80
     - host: example.com
@@ -55,5 +38,44 @@ spec:
             backend:
               service:
                 name: core-api
+                port:
+                  number: 80
+---
+# WebSocket 전용 Ingress — sticky session 어노테이션을 ws.example.com에만 격리
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ticket-ws-ingress
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/affinity: "cookie"
+    nginx.ingress.kubernetes.io/affinity-mode: "persistent"
+    nginx.ingress.kubernetes.io/session-cookie-name: "ws-route"
+    nginx.ingress.kubernetes.io/session-cookie-expires: "172800"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/upstream-hash-by: "$remote_addr"
+spec:
+  tls:
+    - hosts:
+        - ws.example.com
+      secretName: ticket-ws-tls
+  rules:
+    - host: ws.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: websocket-service
+                port:
+                  number: 80
+          - path: /socket.io
+            pathType: Prefix
+            backend:
+              service:
+                name: websocket-service
                 port:
                   number: 80

@@ -2,20 +2,18 @@ import asyncio
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 import logging
 
 from prometheus_fastapi_instrumentator import Instrumentator
-from prometheus_client import Counter as PromCounter
 from src.metrics import duplicate_reservation_total
 
 from src.config import get_settings
 from src.database.db import engine
-from src.api.v1 import health, events, queue, seats, reservations, payments
+from src.api.v1 import health, events, queue, seats, reservations, payments, prediction
 from src.middleware import ErrorHandlerMiddleware, LoggerMiddleware, RateLimiterMiddleware
 from src.redis.client import redis_client
 
-
-# 로깅 설정
 logging.basicConfig(
   level=logging.INFO,
   format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -132,6 +130,9 @@ app.add_middleware(
   allow_headers=["*"],
 )
 
+# 응답 압축
+app.add_middleware(GZipMiddleware, minimum_size=1000)
+
 # 커스텀 미들웨어 (등록 역순으로 실행)
 app.add_middleware(RateLimiterMiddleware)
 app.add_middleware(LoggerMiddleware)
@@ -144,3 +145,4 @@ app.include_router(queue.router)
 app.include_router(seats.router)
 app.include_router(reservations.router)
 app.include_router(payments.router)
+app.include_router(prediction.router)

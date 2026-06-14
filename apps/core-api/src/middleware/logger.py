@@ -4,7 +4,7 @@ import time
 import logging
 
 logger = logging.getLogger("core-api")
-SLOW_REQUEST_THRESHOLD_MS = 500
+SLOW_REQUEST_THRESHOLD_MS = 300
 
 
 class LoggerMiddleware(BaseHTTPMiddleware):
