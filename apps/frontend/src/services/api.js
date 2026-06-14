@@ -1,39 +1,57 @@
-import axios from 'axios'
-
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'
 
-const api = axios.create({
-  baseURL: API_BASE_URL,
-  timeout: 10000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-})
+function getToken() {
+  return localStorage.getItem('access_token')
+}
 
-// 요청 인터셉터 (토큰 추가)
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('access_token')
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`
-    }
-    return config
-  },
-  (error) => Promise.reject(error)
-)
+function buildError(status, data) {
+  const err = new Error(`HTTP ${status}`)
+  err.response = { status, data }
+  return err
+}
 
-// 응답 인터셉터 (에러 처리)
-api.interceptors.response.use(
-  (response) => response.data,
-  (error) => {
-    if (error.response?.status === 401) {
-      // 토큰 만료 시 로컬스토리지 정리
-      localStorage.removeItem('access_token')
-      localStorage.removeItem('queue_token')
-      window.location.href = '/'
-    }
-    return Promise.reject(error)
+async function request(method, path, body) {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), 10000)
+
+  const headers = { 'Content-Type': 'application/json' }
+  const token = getToken()
+  if (token) headers['Authorization'] = `Bearer ${token}`
+
+  let res
+  try {
+    res = await fetch(`${API_BASE_URL}${path}`, {
+      method,
+      headers,
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+      signal: controller.signal,
+    })
+  } catch (e) {
+    clearTimeout(timer)
+    return Promise.reject(e)
   }
-)
+  clearTimeout(timer)
+
+  const data = await res.json().catch(() => null)
+
+  if (res.status === 401) {
+    localStorage.removeItem('access_token')
+    localStorage.removeItem('queue_token')
+    window.location.href = '/'
+    return
+  }
+
+  if (!res.ok) {
+    return Promise.reject(buildError(res.status, data))
+  }
+
+  return data
+}
+
+const api = {
+  get: (path) => request('GET', path),
+  post: (path, data) => request('POST', path, data),
+  delete: (path) => request('DELETE', path),
+}
 
 export default api

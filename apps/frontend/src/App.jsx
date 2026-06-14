@@ -1,26 +1,25 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import './styles/theme.css';
 import './styles/responsive.css';
 import './styles/app-override.css';
-import HomePage from './pages/HomePage';
-import QueuePage from './pages/QueuePage';
-import PaymentPage from './pages/PaymentPage';
-import ConfirmationPage from './pages/ConfirmationPage';
+import QueuePage from './pages/QueuePage';          // 첫 화면 — 즉시 로드
+import { Loading } from './components/shared';
 import storageService from './services/storage';
 
+// 대기열 통과 후에만 필요한 페이지 — 초기 번들에서 제외
+const HomePage         = lazy(() => import('./pages/HomePage'));
+const PaymentPage      = lazy(() => import('./pages/PaymentPage'));
+const ConfirmationPage = lazy(() => import('./pages/ConfirmationPage'));
+
 function App() {
-  // 'queue' | 'seat_selection' | 'payment' | 'confirmation'
   const [phase, setPhase] = useState('queue');
   const [timer, setTimer] = useState(5 * 60);
   const [selectedSeats, setSelectedSeats] = useState([]);
   const [bookingInfo, setBookingInfo] = useState(null);
 
   useEffect(() => {
-    // access_token이 이미 있으면 대기열 건너뜀
     const accessToken = storageService.getAccessToken();
-    if (accessToken) {
-      setPhase('seat_selection');
-    }
+    if (accessToken) setPhase('seat_selection');
   }, []);
 
   useEffect(() => {
@@ -29,45 +28,32 @@ function App() {
     return () => clearInterval(id);
   }, [phase, timer]);
 
-  const handleQueueReady = () => setPhase('seat_selection');
-
-  const handleProceedToPayment = (seats) => {
-    setSelectedSeats(seats);
-    setPhase('payment');
-  };
-
-  const handlePaymentSuccess = (info) => {
+  const handleQueueReady    = () => setPhase('seat_selection');
+  const handleProceedToPayment = (seats) => { setSelectedSeats(seats); setPhase('payment'); };
+  const handlePaymentSuccess   = (info) => {
     setBookingInfo(info);
     storageService.removeAccessToken();
     storageService.removeQueueToken();
     storageService.removeQueueUser();
     setPhase('confirmation');
   };
-
   const handleDone = () => {
-    setSelectedSeats([]);
-    setBookingInfo(null);
-    setTimer(5 * 60);
-    setPhase('queue');
+    setSelectedSeats([]); setBookingInfo(null); setTimer(5 * 60); setPhase('queue');
   };
 
-  if (phase === 'queue') {
-    return <QueuePage onReady={handleQueueReady} />;
-  }
+  if (phase === 'queue') return <QueuePage onReady={handleQueueReady} />;
 
-  if (phase === 'payment') {
-    return (
-      <PaymentPage
-        selectedSeats={selectedSeats}
-        onSuccess={handlePaymentSuccess}
-        onBack={() => setPhase('seat_selection')}
-      />
-    );
-  }
+  if (phase === 'payment') return (
+    <Suspense fallback={<Loading text="결제 페이지 로딩 중..." />}>
+      <PaymentPage selectedSeats={selectedSeats} onSuccess={handlePaymentSuccess} onBack={() => setPhase('seat_selection')} />
+    </Suspense>
+  );
 
-  if (phase === 'confirmation') {
-    return <ConfirmationPage bookingInfo={bookingInfo} onDone={handleDone} />;
-  }
+  if (phase === 'confirmation') return (
+    <Suspense fallback={<Loading text="완료 페이지 로딩 중..." />}>
+      <ConfirmationPage bookingInfo={bookingInfo} onDone={handleDone} />
+    </Suspense>
+  );
 
   const mm = String(Math.floor(timer / 60)).padStart(2, '0');
   const ss = String(timer % 60).padStart(2, '0');
@@ -99,7 +85,9 @@ function App() {
       </div>
 
       <main className="app-main">
-        <HomePage onProceedToPayment={handleProceedToPayment} />
+        <Suspense fallback={<Loading text="좌석 페이지 로딩 중..." />}>
+          <HomePage onProceedToPayment={handleProceedToPayment} />
+        </Suspense>
       </main>
 
       <div className="status-bar-bottom">
