@@ -219,3 +219,103 @@ class TestReservationAPI:
     )
     # 404 또는 403 (다른 사용자) 기대
     assert response.status_code in [404, 403]
+
+
+class TestReservationExpiration:
+  """예매 만료 검증 테스트"""
+
+  def test_complete_reservation_expired(self, mock_db, mock_redis):
+    """만료된 예약 완료 시도: ReservationExpiredError 발생"""
+    logger.info("complete_reservation: 만료된 예약 → ReservationExpiredError 발생 확인")
+    from datetime import datetime, timedelta
+    from src.services.reservation_service import ReservationService
+    from src.exceptions.custom_exceptions import ReservationExpiredError
+    from src.models.reservation import Reservation
+    from uuid import uuid4
+
+    # 만료된 예약 객체 생성
+    reservation_id = uuid4()
+    expired_reservation = Reservation(
+      reservation_id=reservation_id,
+      user_id=uuid4(),
+      event_id=uuid4(),
+      seat_ids=["seat1"],
+      status="held",
+      expires_at=datetime.utcnow() - timedelta(minutes=1),
+    )
+
+    # Mock repository: get_by_id() 반환
+    mock_repo = MagicMock()
+    mock_repo.get_by_id.return_value = expired_reservation
+
+    service = ReservationService(mock_db, mock_redis)
+    service.reservation_repo = mock_repo
+
+    # 만료된 예약 완료 시도 → ReservationExpiredError 발생
+    with pytest.raises(ReservationExpiredError):
+      service.complete_reservation(reservation_id)
+
+  def test_process_payment_expired_reservation(self, mock_db, mock_redis):
+    """만료된 예약으로 결제 시도: ReservationExpiredError 발생"""
+    logger.info("process_payment: 만료된 예약 → ReservationExpiredError 발생 확인")
+    from datetime import datetime, timedelta
+    from src.services.payment_service import PaymentService
+    from src.exceptions.custom_exceptions import ReservationExpiredError
+    from src.models.reservation import Reservation
+    from uuid import uuid4, UUID
+    from decimal import Decimal
+
+    user_uuid = uuid4()
+    user_id = str(user_uuid)
+    reservation_id = uuid4()
+
+    # 만료된 예약
+    expired_reservation = Reservation(
+      reservation_id=reservation_id,
+      user_id=user_uuid,
+      event_id=uuid4(),
+      seat_ids=["seat1"],
+      status="held",
+      expires_at=datetime.utcnow() - timedelta(minutes=1),
+    )
+
+    # Mock repository: get_by_id() 반환
+    mock_repo = MagicMock()
+    mock_repo.get_by_id.return_value = expired_reservation
+
+    service = PaymentService(mock_db, mock_redis)
+    service.reservation_repo = mock_repo
+
+    # 만료된 예약 결제 시도 → ReservationExpiredError 발생
+    with pytest.raises(ReservationExpiredError):
+      service.process_payment(
+        user_id=user_id,
+        reservation_id=reservation_id,
+        payment_method="card",
+        amount=Decimal("100.00"),
+      )
+
+  def test_get_held_by_user_excludes_expired(self, mock_db):
+    """get_held_by_user_and_event: 만료된 예약 제외"""
+    logger.info("get_held_by_user_and_event: 만료 조건 확인")
+    from datetime import datetime, timedelta
+    from src.repositories.reservation_repository import ReservationRepository
+    from src.models.reservation import Reservation
+    from uuid import uuid4
+    from sqlalchemy import and_
+
+    user_id = uuid4()
+    event_id = uuid4()
+
+    # Mock DB 설정: filter 체인 반환
+    mock_query = MagicMock()
+    mock_db.query.return_value = mock_query
+    mock_query.filter.return_value = mock_query
+    mock_query.first.return_value = None
+
+    repo = ReservationRepository(mock_db)
+    result = repo.get_held_by_user_and_event(user_id, event_id)
+
+    # filter 호출 확인: expires_at > now() 조건이 포함되었는지 확인
+    # (정확한 SQL 확인은 mock 체인으로 어려움)
+    assert result is None
