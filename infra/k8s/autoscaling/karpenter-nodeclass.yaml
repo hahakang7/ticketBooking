@@ -28,7 +28,7 @@ spec:
   blockDeviceMappings:
     - deviceName: /dev/xvda
       ebs:
-        volumeSize: 50Gi
+        volumeSize: 20Gi
         volumeType: gp3
         iops: 3000
         throughput: 125

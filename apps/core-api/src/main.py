@@ -6,7 +6,7 @@ from fastapi.middleware.gzip import GZipMiddleware
 import logging
 
 from prometheus_fastapi_instrumentator import Instrumentator
-from src.metrics import duplicate_reservation_total
+from src.metrics import duplicate_reservation_total, predicted_replicas_gauge, prescale_events_total
 
 from src.config import get_settings
 from src.database.db import engine
@@ -28,7 +28,8 @@ _sa_logger = logging.getLogger("sqlalchemy.engine")
 _sa_logger.setLevel(_sql_level)
 _sa_logger.propagate = False
 
-CLEANUP_INTERVAL_SECONDS = 30
+CLEANUP_INTERVAL_SECONDS  = 30
+PRESCALE_INTERVAL_SECONDS = 60
 
 
 def _run_cleanup():
@@ -72,6 +73,29 @@ async def _cleanup_loop():
     await loop.run_in_executor(None, _run_cleanup)
 
 
+def _run_prescale():
+  """LSTM 예측 기반 선제 스케일링 체크 (동기)."""
+  from src.database.db import SessionLocal
+  from src.services.scaling_service import run_prescale_check
+
+  db = SessionLocal()
+  try:
+    run_prescale_check(db, redis_client)
+  except Exception as e:
+    logger.error(f"[PreScale] 체크 실패: {e}")
+  finally:
+    db.close()
+
+
+async def _prescale_loop():
+  """60초마다 이벤트 오픈 예정을 확인하고 선제 스케일업하는 백그라운드 태스크."""
+  await asyncio.sleep(10)  # 앱 초기화 완료 후 시작
+  while True:
+    loop = asyncio.get_event_loop()
+    await loop.run_in_executor(None, _run_prescale)
+    await asyncio.sleep(PRESCALE_INTERVAL_SECONDS)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
   """앱 시작/종료 관리"""
@@ -93,16 +117,20 @@ async def lifespan(app: FastAPI):
   except Exception as e:
     logger.error(f"Redis connection failed: {e}")
 
-  cleanup_task = asyncio.create_task(_cleanup_loop())
-  logger.info(f"[Cleanup] Background task started (interval: {CLEANUP_INTERVAL_SECONDS}s)")
+  cleanup_task  = asyncio.create_task(_cleanup_loop())
+  prescale_task = asyncio.create_task(_prescale_loop())
+  logger.info(f"[Cleanup]  Background task started (interval: {CLEANUP_INTERVAL_SECONDS}s)")
+  logger.info(f"[PreScale] Background task started (interval: {PRESCALE_INTERVAL_SECONDS}s)")
 
   yield
 
   cleanup_task.cancel()
-  try:
-    await cleanup_task
-  except asyncio.CancelledError:
-    pass
+  prescale_task.cancel()
+  for task in (cleanup_task, prescale_task):
+    try:
+      await task
+    except asyncio.CancelledError:
+      pass
 
   logger.info("Application shutdown")
   try:

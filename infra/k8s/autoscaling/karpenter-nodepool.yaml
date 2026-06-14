@@ -25,11 +25,12 @@ spec:
           operator: In
           values:
             - "t3.small"
-            - "c7i-flex.large"
-            - "m7i-flex.large"
+            - "t3.medium"
+            - "t3a.small"
+            - "t3a.medium"
         - key: karpenter.sh/capacity-type
           operator: In
-          values: ["on-demand"]
+          values: ["spot", "on-demand"]
 
   # NodePool 전체 리소스 상한
   limits:
