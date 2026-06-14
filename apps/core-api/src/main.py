@@ -29,6 +29,7 @@ _sa_logger.setLevel(_sql_level)
 _sa_logger.propagate = False
 
 CLEANUP_INTERVAL_SECONDS = 30
+SCALER_INTERVAL_SECONDS = 900  # 15분마다 예측 스케일링 체크
 
 
 def _run_cleanup():
@@ -72,6 +73,36 @@ async def _cleanup_loop():
     await loop.run_in_executor(None, _run_cleanup)
 
 
+def _run_predictive_scaler():
+  """예측 기반 K8s Pod 사전 증설."""
+  from src.database.db import SessionLocal
+  from src.services.prediction_service import PredictionService
+  from src.services.scaler_service import ScalerService
+
+  db = SessionLocal()
+  try:
+    pred_svc = PredictionService(db, redis_client)
+    scaler_svc = ScalerService(db, pred_svc)
+
+    event_ids = scaler_svc.get_upcoming_event_ids()
+    if event_ids:
+      target_replicas = scaler_svc.predict_max_replicas(event_ids)
+      scaler_svc.scale_if_needed(target_replicas)
+  except Exception as e:
+    logger.error(f"[Scaler] Predictive scaling failed: {e}")
+  finally:
+    db.rollback()
+    db.close()
+
+
+async def _predictive_scaler_loop():
+  """15분마다 예측 기반 오토스케일링을 수행하는 백그라운드 태스크."""
+  while True:
+    await asyncio.sleep(SCALER_INTERVAL_SECONDS)
+    loop = asyncio.get_event_loop()
+    await loop.run_in_executor(None, _run_predictive_scaler)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
   """앱 시작/종료 관리"""
@@ -96,11 +127,19 @@ async def lifespan(app: FastAPI):
   cleanup_task = asyncio.create_task(_cleanup_loop())
   logger.info(f"[Cleanup] Background task started (interval: {CLEANUP_INTERVAL_SECONDS}s)")
 
+  scaler_task = asyncio.create_task(_predictive_scaler_loop())
+  logger.info(f"[Scaler] Predictive scaling task started (interval: {SCALER_INTERVAL_SECONDS}s)")
+
   yield
 
   cleanup_task.cancel()
+  scaler_task.cancel()
   try:
     await cleanup_task
+  except asyncio.CancelledError:
+    pass
+  try:
+    await scaler_task
   except asyncio.CancelledError:
     pass
 

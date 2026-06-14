@@ -19,10 +19,12 @@ spec:
         prometheus.io/port: "8000"
         prometheus.io/path: "/metrics"
     spec:
+      serviceAccountName: core-api-scaler
       containers:
         - name: core-api
           image: core-api:latest
           imagePullPolicy: Never
+          command: ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
           ports:
             - containerPort: 8000
           env:
@@ -35,11 +37,11 @@ spec:
                 name: app-secrets
           resources:
             requests:
-              cpu: "100m"
-              memory: "450Mi"
-            limits:
-              cpu: "500m"
+              cpu: "200m"
               memory: "512Mi"
+            limits:
+              cpu: "600m"
+              memory: "768Mi"
           livenessProbe:
             httpGet:
               path: /health

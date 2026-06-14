@@ -1,0 +1,33 @@
+---
+# 예측형 스케일러가 deployment을 패치하기 위한 권한
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: core-api-scaler
+  namespace: ticket-system
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: deployment-scaler
+  namespace: ticket-system
+rules:
+  - apiGroups: ["apps"]
+    resources: ["deployments/scale", "deployments"]
+    verbs: ["get", "patch", "update"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: core-api-scaler-binding
+  namespace: ticket-system
+subjects:
+  - kind: ServiceAccount
+    name: core-api-scaler
+    namespace: ticket-system
+roleRef:
+  kind: Role
+  name: deployment-scaler
+  apiGroup: rbac.authorization.k8s.io
