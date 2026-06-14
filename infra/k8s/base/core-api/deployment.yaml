@@ -19,11 +19,11 @@ spec:
         prometheus.io/port: "8000"
         prometheus.io/path: "/metrics"
     spec:
-      serviceAccountName: core-api-scaler
+      serviceAccountName: core-api
       containers:
         - name: core-api
-          image: core-api:latest
-          imagePullPolicy: Never
+          image: 604764467713.dkr.ecr.ap-northeast-2.amazonaws.com/core-api:latest
+          imagePullPolicy: IfNotPresent
           command: ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
           ports:
             - containerPort: 8000

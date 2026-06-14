@@ -19,8 +19,8 @@ spec:
     spec:
       containers:
       - name: websocket
-        image: ticketbooking-websocket-service:latest
-        imagePullPolicy: Never
+        image: 604764467713.dkr.ecr.ap-northeast-2.amazonaws.com/websocket-service:latest
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 3000
           name: http

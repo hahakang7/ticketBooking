@@ -6,6 +6,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
+  storageClassName: gp2
   resources:
     requests:
       storage: 2Gi
@@ -40,6 +41,8 @@ spec:
           value: "password"
         - name: POSTGRES_DB
           value: "booking_system"
+        - name: PGDATA
+          value: "/var/lib/postgresql/data/pgdata"
         resources:
           requests:
             cpu: 50m

@@ -3,6 +3,8 @@ FROM python:3.11-slim
 WORKDIR /app
 
 COPY requirements.txt .
+# CPU-only PyTorch 먼저 설치 (~180MB vs full ~700MB) — GPU 불필요
+RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY src/ ./src/

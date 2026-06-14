@@ -90,6 +90,16 @@ def load_seed_data():
         "phone": f"010-1234-{i:04d}",
       }
       for i in range(1, 11)
+    ] + [
+      # k6 ticket-open-scenario.js VU 1~200용 고정 UUID
+      # vuHex = VU번호를 16진수 12자리로 패딩: VU1 → 000000000001, VU200 → 0000000000c8
+      {
+        "user_id": f"10000000-0000-0000-0000-{i:012x}",
+        "email": f"k6user{i}@test.com",
+        "name": f"K6 Test User {i}",
+        "phone": f"010-9000-{i:04d}",
+      }
+      for i in range(1, 201)
     ]
 
     for user_data in test_users:

@@ -6,7 +6,7 @@ from fastapi.middleware.gzip import GZipMiddleware
 import logging
 
 from prometheus_fastapi_instrumentator import Instrumentator
-from src.metrics import duplicate_reservation_total
+from src.metrics import duplicate_reservation_total, predicted_replicas_gauge, prescale_events_total
 
 from src.config import get_settings
 from src.database.db import engine
@@ -28,8 +28,8 @@ _sa_logger = logging.getLogger("sqlalchemy.engine")
 _sa_logger.setLevel(_sql_level)
 _sa_logger.propagate = False
 
-CLEANUP_INTERVAL_SECONDS = 30
-SCALER_INTERVAL_SECONDS = 900  # 15분마다 예측 스케일링 체크
+CLEANUP_INTERVAL_SECONDS  = 30
+PRESCALE_INTERVAL_SECONDS = 60
 
 
 def _run_cleanup():
@@ -73,34 +73,27 @@ async def _cleanup_loop():
     await loop.run_in_executor(None, _run_cleanup)
 
 
-def _run_predictive_scaler():
-  """예측 기반 K8s Pod 사전 증설."""
+def _run_prescale():
+  """LSTM 예측 기반 선제 스케일링 체크 (동기)."""
   from src.database.db import SessionLocal
-  from src.services.prediction_service import PredictionService
-  from src.services.scaler_service import ScalerService
+  from src.services.scaling_service import run_prescale_check
 
   db = SessionLocal()
   try:
-    pred_svc = PredictionService(db, redis_client)
-    scaler_svc = ScalerService(db, pred_svc)
-
-    event_ids = scaler_svc.get_upcoming_event_ids()
-    if event_ids:
-      target_replicas = scaler_svc.predict_max_replicas(event_ids)
-      scaler_svc.scale_if_needed(target_replicas)
+    run_prescale_check(db, redis_client)
   except Exception as e:
-    logger.error(f"[Scaler] Predictive scaling failed: {e}")
+    logger.error(f"[PreScale] 체크 실패: {e}")
   finally:
-    db.rollback()
     db.close()
 
 
-async def _predictive_scaler_loop():
-  """15분마다 예측 기반 오토스케일링을 수행하는 백그라운드 태스크."""
+async def _prescale_loop():
+  """60초마다 이벤트 오픈 예정을 확인하고 선제 스케일업하는 백그라운드 태스크."""
+  await asyncio.sleep(10)  # 앱 초기화 완료 후 시작
   while True:
-    await asyncio.sleep(SCALER_INTERVAL_SECONDS)
     loop = asyncio.get_event_loop()
-    await loop.run_in_executor(None, _run_predictive_scaler)
+    await loop.run_in_executor(None, _run_prescale)
+    await asyncio.sleep(PRESCALE_INTERVAL_SECONDS)
 
 
 @asynccontextmanager
@@ -124,24 +117,20 @@ async def lifespan(app: FastAPI):
   except Exception as e:
     logger.error(f"Redis connection failed: {e}")
 
-  cleanup_task = asyncio.create_task(_cleanup_loop())
-  logger.info(f"[Cleanup] Background task started (interval: {CLEANUP_INTERVAL_SECONDS}s)")
-
-  scaler_task = asyncio.create_task(_predictive_scaler_loop())
-  logger.info(f"[Scaler] Predictive scaling task started (interval: {SCALER_INTERVAL_SECONDS}s)")
+  cleanup_task  = asyncio.create_task(_cleanup_loop())
+  prescale_task = asyncio.create_task(_prescale_loop())
+  logger.info(f"[Cleanup]  Background task started (interval: {CLEANUP_INTERVAL_SECONDS}s)")
+  logger.info(f"[PreScale] Background task started (interval: {PRESCALE_INTERVAL_SECONDS}s)")
 
   yield
 
   cleanup_task.cancel()
-  scaler_task.cancel()
-  try:
-    await cleanup_task
-  except asyncio.CancelledError:
-    pass
-  try:
-    await scaler_task
-  except asyncio.CancelledError:
-    pass
+  prescale_task.cancel()
+  for task in (cleanup_task, prescale_task):
+    try:
+      await task
+    except asyncio.CancelledError:
+      pass
 
   logger.info("Application shutdown")
   try:
