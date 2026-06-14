@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import { visualizer } from 'rollup-plugin-visualizer'
 
 export default defineConfig({
   test: {
@@ -7,7 +8,10 @@ export default defineConfig({
     globals: true,
     setupFiles: './src/test/setup.js',
   },
-  plugins: [react()],
+  plugins: [
+    react(),
+    visualizer({ filename: 'dist/bundle-stats.html', open: false, gzipSize: true }),
+  ],
   server: {
     port: 5173,
     host: '0.0.0.0',
@@ -26,9 +30,9 @@ export default defineConfig({
       output: {
         manualChunks: {
           'react-vendor': ['react', 'react-dom'],
-          'socket-io': ['socket.io-client'],
-        }
-      }
-    }
-  }
+          'socket-io':    ['socket.io-client'],
+        },
+      },
+    },
+  },
 })
