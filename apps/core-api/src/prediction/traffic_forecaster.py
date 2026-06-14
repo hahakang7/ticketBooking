@@ -36,12 +36,12 @@ class _RPSNet(nn.Module):
     """
     LSTM 시계열 예측 네트워크.
 
-    Input  : (batch, seq_len, 4)
-             [t_frac, sin(2π·t_frac), cos(2π·t_frac), event_scale]
+    Input  : (batch, seq_len, 5)
+             [t_frac, sin(2π·t_frac), cos(2π·t_frac), event_scale, hour_of_day]
     Output : (batch, seq_len)  — 정규화된 RPS (0~1)
     """
 
-    def __init__(self, input_size: int = 4, hidden_size: int = 64, num_layers: int = 2):
+    def __init__(self, input_size: int = 5, hidden_size: int = 64, num_layers: int = 2):
         super().__init__()
         self.lstm = nn.LSTM(
             input_size, hidden_size, num_layers,
@@ -62,16 +62,110 @@ class _RPSNet(nn.Module):
 # ── 합성 학습 데이터 생성 ────────────────────────────────────────────────────────
 
 def _build_features(steps: int, event_scale: float) -> np.ndarray:
-    """시퀀스 피처 행렬 생성: (steps, 4)."""
+    """
+    시퀀스 피처 행렬 생성: (steps, 5).
+
+    피처:
+    1. t_frac: 시퀀스 상 상대 위치 (0~1)
+    2. sin(2π·t_frac): 순환 시간 (사인)
+    3. cos(2π·t_frac): 순환 시간 (코사인)
+    4. event_scale: 이벤트 규모 (상수)
+    5. hour_of_day: 하루 중 절대 시각 (0~1, 자정=0, 정오=0.5)
+    """
     t = np.arange(steps, dtype=np.float32)
     t_frac = t / max(steps - 1, 1)
+    # hour_of_day: step * 15분 → 시간 → 정규화 (0~1)
+    # step 0 = 00:00 (0/24), step 40 = 10:00 (10/24 ≈ 0.417)
+    hour_of_day = (t * 15.0 / 60.0) / 24.0
     feats = np.stack([
         t_frac,
         np.sin(2 * math.pi * t_frac),
         np.cos(2 * math.pi * t_frac),
         np.full(steps, event_scale, dtype=np.float32),
+        hour_of_day,
     ], axis=1)
     return feats
+
+
+_OPEN_STEPS = [40, 56]  # 오전 10시(step 40), 오후 2시(step 56) — 15분 단위
+
+
+def _append_sample(
+    X_list: list,
+    y_list: list,
+    event_scale: float,
+    seq_len: int,
+    rng: np.random.Generator,
+) -> None:
+  """
+  학습 데이터에 샘플 추가.
+  event_scale → RPS 시계열 생성 및 feature 벡터와 함께 저장.
+  """
+  peak_rps = float(rng.uniform(200.0, _RPS_SCALE) * event_scale)
+  baseline = float(rng.uniform(20.0, 80.0))
+  noise_std = float(rng.uniform(0.03, 0.12))
+
+  t = np.arange(seq_len, dtype=np.float32)
+  rps = _rps_weekly_sale(t, seq_len, peak_rps, baseline, rng)
+  rps *= (1.0 + rng.normal(0.0, noise_std, size=seq_len))
+  rps = np.clip(rps, 0.0, None)
+
+  X_list.append(_build_features(seq_len, event_scale))
+  y_list.append((rps / _RPS_SCALE).astype(np.float32))
+
+
+def _rps_weekly_sale(
+    t: np.ndarray,
+    seq_len: int,
+    peak_rps: float,
+    baseline: float,
+    rng: np.random.Generator,
+) -> np.ndarray:
+    """
+    시퀀스 중간(step 48)에 명확한 피크를 배치.
+    LSTM이 event_scale → peak_rps 크기 관계만 학습.
+
+    predict()에서 max값만 추출하므로 피크 위치는 무관.
+    predict()가 target_datetime 기준 가우시안으로 곡선을 재구성한다.
+
+    Parameters
+    ----------
+    t : np.ndarray
+        시간 스텝 배열 (0~seq_len-1)
+    seq_len : int
+        시퀀스 길이 (96 = 24시간 × 15분)
+    peak_rps : float
+        피크 RPS
+    baseline : float
+        평시 트래픽 RPS
+    rng : np.random.Generator
+        난수 생성기
+
+    Returns
+    -------
+    np.ndarray
+        RPS 곡선: 중간부 (step 48) 기준 warmup + burst + tail
+    """
+    peak_step = 48  # seq_len 중간 고정
+    pre_start = peak_step - int(rng.integers(4, 9))
+    sigma = float(rng.uniform(2.0, 4.0))
+    decay = float(rng.uniform(0.05, 0.12))
+
+    # warmup: 선형 증가
+    window = max(peak_step - pre_start, 1)
+    warmup = np.where(
+        (t >= pre_start) & (t < peak_step),
+        (peak_rps * 0.2) * (t - pre_start) / window,
+        0.0,
+    )
+
+    # burst: 가우시안 피크
+    burst = peak_rps * np.exp(-0.5 * ((t - peak_step) / sigma) ** 2)
+
+    # tail: 지수 감쇠
+    tail = (peak_rps * 0.3) * np.exp(-decay * np.maximum(t - peak_step, 0.0))
+
+    return warmup + burst + tail + baseline
 
 
 def _generate_synthetic_data(
@@ -82,25 +176,35 @@ def _generate_synthetic_data(
     """
     티켓 오픈 트래픽 패턴 합성 데이터 생성.
 
-    패턴: T=0(오픈) 직후 급증 → 지수 감쇠 → baseline 수렴
+    패턴: 주간 정기 판매 (Weekly Regular Sale)
+    - 정기 이벤트 쌍 (70%): 같은 시리즈, 회차별 약간 다른 참여율
+    - 단건 이벤트 (30%): 일회성 이벤트, 전체 범위의 규모
+
+    모델이 학습하는 패턴:
+    - event_scale → peak_rps 기본 회귀
+    - 정기 이벤트는 회차 간 규모 일관성 (2회차는 85~100% 참여율)
     """
     rng = np.random.default_rng(seed)
     X_list, y_list = [], []
 
-    for _ in range(n_events):
+    n_series = int(n_events * 0.7) // 2   # 70% → 각 시리즈 2회차 = 총 700개
+    n_oneoff = n_events - n_series * 2    # 30% = 300개 단건
+
+    # 정기 이벤트 쌍: 같은 시리즈의 연속된 오픈
+    for _ in range(n_series):
+        series_scale = float(rng.uniform(0.3, 1.0))
+        for occ in range(2):
+            # 2회차는 살짝 낮은 참여율 (첫 회차 100%, 두번째 회차 85~100%)
+            if occ == 1:
+                event_scale = series_scale * float(rng.uniform(0.85, 1.0))
+            else:
+                event_scale = series_scale
+            _append_sample(X_list, y_list, event_scale, seq_len, rng)
+
+    # 단건 이벤트: 전체 범위의 규모
+    for _ in range(n_oneoff):
         event_scale = float(rng.uniform(0.1, 1.0))
-        peak_rps = rng.uniform(200.0, _RPS_SCALE) * event_scale
-        decay = rng.uniform(0.03, 0.18)        # 감쇠 속도
-        noise_std = rng.uniform(0.05, 0.20)    # 상대적 노이즈 크기
-        baseline = rng.uniform(20.0, 80.0)     # 평시 트래픽
-
-        t = np.arange(seq_len, dtype=np.float32)
-        rps = peak_rps * np.exp(-decay * t) + baseline
-        rps *= (1.0 + rng.normal(0.0, noise_std, size=seq_len))
-        rps = np.clip(rps, 0.0, None)
-
-        X_list.append(_build_features(seq_len, event_scale))
-        y_list.append((rps / _RPS_SCALE).astype(np.float32))
+        _append_sample(X_list, y_list, event_scale, seq_len, rng)
 
     return np.array(X_list), np.array(y_list)
 
@@ -202,9 +306,9 @@ class TrafficForecaster:
         event_id : str
             예측 대상 이벤트 UUID (로깅용)
         target_datetime : datetime
-            예매 오픈 시각 (예측 기준점 T=0)
+            예매 오픈 시각
         horizon_hours : int
-            예측 기간 (1~72 시간)
+            예측 기간 (1~24 시간)
         granularity_minutes : int
             예측 간격 (5/15/30/60 분)
         event_scale : float
@@ -217,13 +321,18 @@ class TrafficForecaster:
         List[ForecastPoint]
             timestamp, predicted_rps, lower_bound, upper_bound 포함 시계열
         """
-        steps = (horizon_hours * 60) // granularity_minutes
-        feats = _build_features(steps, event_scale)
-        x = torch.tensor(feats).unsqueeze(0)   # (1, steps, 4)
+        # STEP 1: LSTM으로 피크 크기만 추출
+        # ================================================
+        # LSTM은 event_scale → peak_rps 관계를 학습했다.
+        # 피크 시각은 target_datetime(DB의 event.start_at)에서 얻는다.
+        _SEQ_LEN = 96
 
-        # Monte Carlo Dropout: dropout 활성화 상태로 복수 추론 → 분포 추정
+        feats = _build_features(_SEQ_LEN, event_scale)
+        x = torch.tensor(feats).unsqueeze(0)   # (1, 96, 5)
+
+        # Monte Carlo Dropout로 불확실성 추정
         self._net.train()
-        samples = np.zeros((mc_samples, steps), dtype=np.float32)
+        samples = np.zeros((mc_samples, _SEQ_LEN), dtype=np.float32)
         with torch.no_grad():
             for i in range(mc_samples):
                 samples[i] = self._net(x).squeeze(0).numpy()
@@ -232,21 +341,41 @@ class TrafficForecaster:
         mean_norm = samples.mean(axis=0)
         std_norm = samples.std(axis=0)
 
+        # LSTM 출력에서 최대값만 추출
+        peak_norm = float(mean_norm.max())
+        peak_std = float(std_norm[np.argmax(mean_norm)])
+        peak_rps = peak_norm * _RPS_SCALE
+        margin = peak_std * _RPS_SCALE * _CI_Z
+
+        logger.debug(
+            f"[{event_id}] LSTM 예측: peak_rps={peak_rps:.0f}±{margin:.0f} "
+            f"(event_scale={event_scale:.2f})"
+        )
+
+        # STEP 2: target_datetime을 중심으로 가우시안 곡선 구성
+        # ================================================
+        # target_datetime이 피크, horizon_hours 범위 내에서 곡선 생성
+        sigma_steps = 4.0  # 1시간 = 4 steps (15분 단위)
+        steps = (horizon_hours * 60) // granularity_minutes
+        center = steps // 2  # 반환 구간의 중앙 = target_datetime
+
         points: List[ForecastPoint] = []
         for i in range(steps):
-            ts = target_datetime + timedelta(minutes=i * granularity_minutes)
-            rps = float(mean_norm[i]) * _RPS_SCALE
-            margin = float(std_norm[i]) * _RPS_SCALE * _CI_Z
+            offset = i - center
+            ts = target_datetime + timedelta(minutes=offset * granularity_minutes)
+            # 가우시안: target_datetime에서 멀어질수록 감소
+            gaussian = math.exp(-0.5 * (offset / sigma_steps) ** 2)
+            rps = peak_rps * gaussian
             points.append(ForecastPoint(
                 timestamp=ts,
                 predicted_rps=round(max(0.0, rps), 1),
-                lower_bound=round(max(0.0, rps - margin), 1),
-                upper_bound=round(rps + margin, 1),
+                lower_bound=round(max(0.0, rps - margin * gaussian), 1),
+                upper_bound=round(rps + margin * gaussian, 1),
             ))
 
         logger.debug(
-            f"[{event_id}] 예측 완료: {steps}개 지점, "
-            f"peak={max(p.predicted_rps for p in points):.0f} RPS"
+            f"[{event_id}] 예측 완료: {len(points)}개 지점, "
+            f"peak={max(p.predicted_rps for p in points):.0f} RPS at {target_datetime.strftime('%H:%M')}"
         )
         return points
 
