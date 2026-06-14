@@ -24,11 +24,10 @@ def get_queue_service(r=Depends(get_redis)) -> QueueService:
 
 def _log_scaling_recommendation(event_id: str, r):
   """대기열 최초 오픈 시 예측 모델 호출 및 로깅 (백그라운드 태스크)"""
+  db = SessionLocal()
   try:
-    db = SessionLocal()
     service = PredictionService(db, r)
-    plan = service.get_resource_plan(event_id)
-    # 로그는 service.get_resource_plan() 내에서 이미 출력됨
+    service.get_resource_plan(event_id)
   except Exception as e:
     logger.error(f"[Prediction] Background task failed for event={event_id}: {e}")
   finally:
