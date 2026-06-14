@@ -2,6 +2,7 @@ import uuid
 import random
 import logging
 from decimal import Decimal
+from datetime import datetime
 
 from sqlalchemy.orm import Session
 import redis as redis_lib
@@ -11,7 +12,7 @@ from src.repositories.payment_repository import PaymentRepository
 from src.repositories.reservation_repository import ReservationRepository
 from src.schemas.payment_schema import PaymentResponse
 from src.services.reservation_service import ReservationService
-from src.exceptions.custom_exceptions import ReservationNotFoundError, BusinessLogicError
+from src.exceptions.custom_exceptions import ReservationNotFoundError, BusinessLogicError, ReservationExpiredError
 
 logger = logging.getLogger("core-api")
 
@@ -51,6 +52,8 @@ class PaymentService:
       raise ReservationNotFoundError("Not your reservation")
     if reservation.status != "held":
       raise BusinessLogicError(f"Reservation not in held status: {reservation.status}")
+    if reservation.expires_at < datetime.utcnow():
+      raise ReservationExpiredError(f"Reservation {reservation_id} has expired")
 
     # 금액 검증
     seats = self.db.query(Seat).filter(

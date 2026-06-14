@@ -49,7 +49,7 @@ class ReservationRepository:
   def get_held_by_user_and_event(
     self, user_id: uuid.UUID, event_id: uuid.UUID
   ) -> Optional[Reservation]:
-    """double-check: 동일 사용자가 동일 이벤트에 held 예약이 있는지"""
+    """double-check: 동일 사용자가 동일 이벤트에 유효한 held 예약이 있는지"""
     return (
       self.db.query(Reservation)
       .filter(
@@ -57,6 +57,7 @@ class ReservationRepository:
           Reservation.user_id == user_id,
           Reservation.event_id == event_id,
           Reservation.status == "held",
+          Reservation.expires_at > datetime.utcnow(),
         )
       )
       .first()

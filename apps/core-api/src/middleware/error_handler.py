@@ -4,7 +4,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 import logging
 
 from src.schemas.common import ApiResponse
-from src.exceptions.custom_exceptions import BusinessLogicError
+from src.exceptions.custom_exceptions import BusinessLogicError, ReservationExpiredError
 
 logger = logging.getLogger(__name__)
 
@@ -14,6 +14,15 @@ class ErrorHandlerMiddleware(BaseHTTPMiddleware):
     try:
       response = await call_next(request)
       return response
+    except ReservationExpiredError as e:
+      return JSONResponse(
+        status_code=status.HTTP_410_GONE,
+        content=ApiResponse(
+          code=410,
+          message="Reservation expired",
+          data={"error": str(e)},
+        ).model_dump(),
+      )
     except BusinessLogicError as e:
       return JSONResponse(
         status_code=status.HTTP_409_CONFLICT,

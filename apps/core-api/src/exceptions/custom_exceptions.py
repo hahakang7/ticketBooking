@@ -21,3 +21,8 @@ class ReservationNotFoundError(BusinessLogicError):
 class DuplicateReservationError(BusinessLogicError):
   """중복 예매 시도"""
   pass
+
+
+class ReservationExpiredError(BusinessLogicError):
+  """예매 제한시간이 만료된 경우"""
+  pass

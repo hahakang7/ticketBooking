@@ -22,6 +22,7 @@ from src.exceptions.custom_exceptions import (
   SeatNotAvailableError,
   DuplicateReservationError,
   ReservationNotFoundError,
+  ReservationExpiredError,
 )
 
 logger = logging.getLogger("core-api")
@@ -181,6 +182,8 @@ class ReservationService:
     reservation = self.reservation_repo.get_by_id(reservation_id)
     if not reservation or reservation.status != "held":
       raise ReservationNotFoundError("Held reservation not found")
+    if reservation.expires_at < datetime.utcnow():
+      raise ReservationExpiredError(f"Reservation {reservation_id} has expired")
 
     event_id = str(reservation.event_id)
     with reservation_lock(self.r, event_id):
