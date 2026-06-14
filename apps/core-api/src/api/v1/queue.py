@@ -24,14 +24,16 @@ def get_queue_service(r=Depends(get_redis)) -> QueueService:
 
 def _log_scaling_recommendation(event_id: str, r):
   """대기열 최초 오픈 시 예측 모델 호출 및 로깅 (백그라운드 태스크)"""
-  db = SessionLocal()
+  db = None
   try:
+    db = SessionLocal()
     service = PredictionService(db, r)
     service.get_resource_plan(event_id)
   except Exception as e:
     logger.error(f"[Prediction] Background task failed for event={event_id}: {e}")
   finally:
-    db.close()
+    if db:
+      db.close()
 
 
 @router.post("/join", response_model=ApiResponse[QueueJoinResponse], status_code=status.HTTP_200_OK)

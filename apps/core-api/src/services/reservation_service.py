@@ -14,7 +14,7 @@ from src.metrics import duplicate_reservation_total, reservation_duration_second
 from src.models.seat import Seat
 from src.models.reservation import Reservation
 from src.redis.lock import reservation_lock, LockAcquireError
-from src.redis.constants import SEAT_HOLD_KEY, SEAT_HOLD_TTL, CACHE_SEATS_KEY
+from src.redis.constants import SEAT_HOLD_KEY, SEAT_HOLD_TTL, CACHE_SEATS_KEY, CACHE_AVAILABLE_SEATS_KEY
 from src.repositories.reservation_repository import ReservationRepository
 from src.repositories.seat_repository import SeatRepository
 from src.schemas.reservation_schema import ReservationResponse
@@ -326,6 +326,7 @@ class ReservationService:
       # 좌석 상태 변경 시 캐시 즉시 무효화
       pipe = self.r.pipeline()
       pipe.delete(CACHE_SEATS_KEY(event_id))
+      pipe.delete(CACHE_AVAILABLE_SEATS_KEY(event_id))
       pipe.publish(channel, message)
       pipe.execute()
     except Exception as e:

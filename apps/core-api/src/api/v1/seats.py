@@ -7,7 +7,7 @@ import redis as redis_lib
 
 from src.dependencies import get_db, get_redis, get_current_user
 from src.repositories.seat_repository import SeatRepository
-from src.redis.constants import CACHE_SEATS_KEY, SEAT_CACHE_TTL
+from src.redis.constants import CACHE_SEATS_KEY, CACHE_AVAILABLE_SEATS_KEY, SEAT_CACHE_TTL
 from src.schemas.common import ApiResponse
 from src.schemas.seat_schema import SeatListResponse, SeatResponse
 
@@ -42,12 +42,23 @@ async def get_seats(
 async def get_available_seats(
   event_id: uuid.UUID,
   db: Session = Depends(get_db),
+  r: redis_lib.Redis = Depends(get_redis),
   _user=Depends(get_current_user),
 ):
-  """이용 가능한 좌석만 조회"""
+  """이용 가능한 좌석만 조회 (캐시됨, 10초 TTL)"""
+  cache_key = CACHE_AVAILABLE_SEATS_KEY(str(event_id))
+
+  cached = r.get(cache_key)
+  if cached:
+    items = [SeatResponse.model_validate(s) for s in json.loads(cached)]
+    return ApiResponse(code=200, message="success (cached)", data=SeatListResponse(items=items, total=len(items)))
+
   repo = SeatRepository(db)
   seats = repo.get_available_seats(event_id)
   items = [SeatResponse.model_validate(s) for s in seats]
+
+  r.set(cache_key, json.dumps([i.model_dump(mode="json") for i in items]), ex=SEAT_CACHE_TTL)
+
   return ApiResponse(
     code=200,
     message="success",

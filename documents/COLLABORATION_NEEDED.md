@@ -1,8 +1,10 @@
 # 팀원 협의 필요 항목 (Week 3~4)
 
 > **작성일:** 2026-06-01  
-> **최종 업데이트:** 2026-06-08
+> **최종 업데이트:** 2026-06-14
 > **대상:** 팀원 1 (인프라/부하 테스트), 팀원 3 (WebSocket/실시간 UI)
+>
+> **상태 변경 사항:** Week 3 협의 항목 중 예측 모델 API 및 k6 reservation-stress-test.js가 예상보다 먼저 완성됨
 
 ---
 
@@ -36,77 +38,70 @@
 
 ## 📌 진행 중인 Week 3 항목
 
-### 1. 팀원 1에게: Reservation 부하 테스트 정보 제공
+### 1. ✅ 팀원 1에게: Reservation 부하 테스트 (스크립트 완성)
 
-**목적:** `k6 reservation-stress-test.js` 작성을 위한 API 스펙 제공
+**상태:** 완료 (2026-06-14) — 스크립트 완성, 실행 및 결과 보고는 Week 4
 
-#### k6 테스트 시나리오
+**구현된 파일:** `tests/k6/reservation-stress-test.js`
 
-**목표:** 0건 중복 예매 검증
-
-**사전 준비:**
-- 테스트용 이벤트 생성 (event-456)
-- 테스트용 좌석 100개 준비 (A1 ~ E20)
-
-**VU 설정:** 50 VU  
-**지속시간:** 120초
-
-**시나리오:**
+**테스트 시나리오:**
 ```
-VU마다:
+50 VU, 120초:
 1. POST /api/queue/join → queue_token 획득
-2. GET /api/queue/sse → position=1 대기 (최대 60초)
-3. access_token 획득 (SSE에서 발급)
-4. 5회 반복:
-   - POST /api/v1/reservations (seat_ids: ["A1"]) 시도
+2. GET /api/queue/status (폴링) → position=1 대기
+3. POST /api/v1/reservations (seat_ids: ["A1"]) 5회 시도
    - 성공 시 예약 ID 기록
    - 409 Conflict 시 다른 좌석 시도
-5. POST /api/v1/payments (첫 번째 성공한 예약만 결제)
+4. POST /api/v1/payments (첫 번째 성공한 예약만 결제)
 ```
 
-**성능 목표:**
+**검증 메트릭:**
+- `duplicate_reservations_total` 카운터: 중복 예매 0건 ⭐ 핵심
 - P95 응답 시간: < 300ms
-- **중복 예매:** 0건 (A1 좌석 성공 건수 = 1) ⭐ 핵심
-- 에러율: < 5%
 - 결제 성공률: > 90%
+- 에러율: < 5%
 
-**중복 예매 검증 쿼리:**
+**중복 예매 검증:**
 ```sql
-SELECT 
-  seat_id,
-  COUNT(*) as completed_count,
-  GROUP_CONCAT(reservation_id) as reservations
+SELECT seat_id, COUNT(*) as completed_count
 FROM reservations
 WHERE status = 'completed' AND event_id = 'event-456'
-GROUP BY seat_id
-HAVING COUNT(*) > 1;
-
-# 결과: 0행 (중복 예매 없음 ✓)
+GROUP BY seat_id HAVING COUNT(*) > 1;
+-- 결과: 0행 (중복 예매 없음 ✓)
 ```
 
-**📋 상태:** 팀원 1이 k6 스크립트 작성 대기 중
+**추가 구현:**
+- `tests/k6/queue-load-test.js` - ramp_up_down (0→100 VU) + flash_crowd (5000 req/s)
+- `tests/k6/websocket-load-test.js` - Socket.IO 1000 VU, 좌석 업데이트 레이턴시 < 100ms
 
 ---
 
-### 2. 팀원 1과: 예측 모델 API 연동 협의
+### 2. ✅ 팀원 1과: 예측 모델 API 연동 협의 (구현 완료)
 
-> ⚠️ **현재 미구현** — `apps/core-api/src/prediction/` 디렉토리만 존재하고 모듈은 비어 있습니다. 팀원 1의 모듈(`traffic_forecaster.py` / `resource_calculator.py`) 제공 대기 중이며, 제공 후 아래 엔드포인트로 API 래핑 예정입니다.
+**상태:** 완료 (2026-06-14)
 
-**팀원 1의 작업 항목:**
-- `apps/core-api/src/prediction/traffic_forecaster.py` 구현 (트래픽 예측 모델)
-- `apps/core-api/src/prediction/resource_calculator.py` 구현 (리소스 계획)
+**구현된 내용:**
 
-**팀원 2 (우리)의 작업:**
-- 위 모듈을 임포트하여 API 엔드포인트 래핑
-- 엔드포인트:
-  - `POST /api/prediction/forecast`
-  - `GET /api/prediction/resource-plan`
+#### 예측 모델 (팀원 1)
+- ✅ `traffic_forecaster.py` - LSTM 기반 PyTorch 신경망 (`_RPSNet`)
+  - 합성 데이터 1000개로 자동 학습 (40 epoch, 모델 없으면 첫 기동 시 생성)
+  - Monte Carlo Dropout (mc_samples=40)으로 90% 신뢰구간 반환
+- ✅ `resource_calculator.py` - ForecastPoint → ScalingWindow 변환
+  - RPS → 파드 수 (min=2, max=50, 기본 250 RPS/pod)
+  - 스케일다운 시 한 스텝 최대 20% 감소 제한
 
-**협의 내용:**
-1. 예측 모델의 입력 파라미터 형식
-2. 출력 응답 형식
-3. 모델 학습된 파일 위치 (`apps/core-api/models/traffic_model.pkl` 등)
-4. 예측 수행 시간 (동기 vs 비동기)
+#### API 엔드포인트 (팀원 2)
+- ✅ `POST /api/v1/prediction/forecast` - 트래픽 예측
+  - 파라미터: `event_id` (선택사항, 있으면 LSTM, 없으면 Mock)
+  - 응답: `expected_users`, `peak_time`, `predicted_rps[]`, `confidence_interval`
+- ✅ `GET /api/v1/prediction/resource-plan` - 리소스 계획
+  - 파라미터: `event_id` (선택사항)
+  - 응답: `recommended_replicas`, `scale_trigger`, `scaling_windows[]`
+
+**주의사항:**
+- 엔드포인트 경로: `/api/v1/prediction/` (문서에 `/api/prediction/`으로 표기했으나 실제는 `/api/v1/` prefix)
+- 모델 파일: `apps/core-api/models/traffic_model.pt` (첫 기동 시 자동 생성)
+- PredictionService 레이어: Redis 캐싱 (5분 TTL) + 에러 시 fallback 포함
 
 ---
 
@@ -132,27 +127,27 @@ HAVING COUNT(*) > 1;
 
 ### ✅ Week 2 (완료)
 
-- ✅ 팀원 1: Queue 부하 테스트 정보 검토 및 k6 스크립트 작성 대기
+- ✅ 팀원 1: Queue 부하 테스트 정보 검토 및 k6 스크립트 작성 완료
 - ✅ 팀원 3: SSE 이벤트 형식 확인 및 구현 완료
 
-### Week 3 (진행 중)
+### ✅ Week 3 (완료)
 
 #### 완료됨
 - ✅ 팀원 2: Reservation API + Rate Limiting 구현
 - ✅ 팀원 2: Payment API + Rate Limiting 구현
 - ✅ 팀원 2: Redis Pub/Sub 메시지 형식 구현 및 5가지 발행 시점 적용
 - ✅ 팀원 3: Redis Pub/Sub 메시지 형식 확정
+- ✅ 팀원 1: Reservation 부하 테스트 정보 검토 및 k6 스크립트 작성 완료
+- ✅ 팀원 1: 예측 모델 API 모듈 제공 완료 (`traffic_forecaster.py`, `resource_calculator.py`)
+- ✅ 팀원 2: 예측 모델 임포트 및 API 래핑 완료 (`POST /api/v1/prediction/forecast`, `GET /api/v1/prediction/resource-plan`)
 
-#### 진행 중
-- [ ] 팀원 1: Reservation 부하 테스트 정보 검토 및 k6 스크립트 작성
-- [ ] 팀원 1: 예측 모델 API 스펙 공유 (`traffic_forecaster.py`, `resource_calculator.py`)
-- [ ] 팀원 2: 예측 모델 임포트 및 API 래핑
+### Week 4 (진행 중)
 
-### Week 4 (예정)
-
+#### 남은 작업
 - [ ] 팀원 1: k6 부하 테스트 실행 및 결과 보고
   - **검증 목표:** 중복 예매 0건
   - **성능 목표:** P95 < 300ms
+  - **대상 스크립트:** `reservation-stress-test.js`, `queue-load-test.js`, `websocket-load-test.js`
 - [ ] 팀원 2: k6 결과 분석 및 성능 최적화
 - [ ] 팀원 1, 2, 3: 최종 성능 검증 미팅
 
@@ -160,24 +155,29 @@ HAVING COUNT(*) > 1;
 
 ## 📝 주요 협의 내용
 
-### 예측 모델 API (팀원 1)
+### ✅ 예측 모델 API (구현 완료)
 
-**필요한 정보:**
-1. 예측 모델의 입력 파라미터 형식
-2. 출력 응답 형식
-3. 모델 파일 위치 (`apps/core-api/models/traffic_model.pkl` 등)
-4. 예측 수행 시간 (동기 vs 비동기)
+**구현된 엔드포인트:**
+- `POST /api/v1/prediction/forecast` - 트래픽 예측
+  - 입력: `event_id` (선택사항)
+  - 출력: `expected_users`, `peak_time`, `predicted_rps[]`, `confidence_interval`
+- `GET /api/v1/prediction/resource-plan` - 리소스 계획
+  - 입력: `event_id` (선택사항)
+  - 출력: `recommended_replicas`, `scaling_windows[]`
 
-**팀원 2 구현 예정:**
-- `POST /api/prediction/forecast` - 트래픽 예측
-- `GET /api/prediction/resource-plan` - 리소스 계획
+**구현 상세:**
+- 동기 처리 (모델 예측은 < 200ms)
+- Redis 캐싱 (5분 TTL)
+- 모델 파일: `apps/core-api/models/traffic_model.pt` (자동 생성)
 
-### INTERNAL_SECRET 공유 (팀원 2/3)
+### ✅ INTERNAL_SECRET 공유 (팀원 2/3)
 
 **내부 API 보안:**
 - 환경변수 `INTERNAL_SECRET` 값을 팀원 2/3가 동일하게 설정
-- `POST /api/v1/reservations/internal/release-user` 헤더로 검증
+- `POST /api/v1/reservations/internal/release-user` 헤더로 검증 (`X-Internal-Secret`)
 - WebSocket 서비스가 사용자 연결 해제 시 호출
+
+**구현 상태:** 완료 (사용 준비 완료)
 
 ---
 

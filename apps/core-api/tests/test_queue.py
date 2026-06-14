@@ -8,28 +8,6 @@ from src.redis.queue import add_to_queue, get_position, consume_from_queue_atomi
 logger = logging.getLogger("core-api")
 
 
-@pytest.fixture
-def mock_redis():
-  r = MagicMock()
-  r.zadd.return_value = 1
-  r.expire.return_value = True
-  r.zrank.return_value = None
-  r.zcard.return_value = 0
-  r.zrem.return_value = 0
-  r.incr.return_value = 1
-  return r
-
-
-@pytest.fixture
-def app_client(mock_redis):
-  with patch("src.redis.client.redis_client", mock_redis), \
-       patch("src.dependencies.redis_client", mock_redis), \
-       patch("src.middleware.rate_limiter.redis_client", mock_redis):
-    from src.main import app
-    client = TestClient(app, raise_server_exceptions=False)
-    yield client, mock_redis
-
-
 class TestQueueService:
   def test_join_queue_new_user(self, mock_redis):
     """신규 사용자 대기열 참가: ZADD 호출 후 position 1 반환"""

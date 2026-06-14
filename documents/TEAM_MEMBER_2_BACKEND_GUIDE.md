@@ -639,7 +639,6 @@ Medium 이슈 3개 개선:
 ```
 [ ] 결제 서비스 완성
     └─ 위치: apps/core-api/src/services/payment_service.py
-       └─ [ ] verify_payment() - 외부 PG 결제 검증 (PG 연동 시)
 
 [ ] 예측 모델 API 연동
     └─ 위치: apps/core-api/src/api/v1/prediction.py
