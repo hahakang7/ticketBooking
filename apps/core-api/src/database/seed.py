@@ -75,8 +75,15 @@ def load_seed_data():
       db.commit()
       print(f"Created {seat_count} seats for event {event.name}")
 
-    # 테스트 사용자 생성
+    # 테스트 사용자 생성 (프론트엔드 DEV_USER_ID 포함)
     test_users = [
+      {
+        "user_id": "00000000-0000-0000-0000-000000000001",
+        "email": "devuser@test.com",
+        "name": "Dev User",
+        "phone": "010-0000-0001",
+      },
+    ] + [
       {
         "email": f"user{i}@test.com",
         "name": f"Test User {i}",
@@ -91,7 +98,7 @@ def load_seed_data():
         continue
 
       user = User(
-        user_id=uuid.uuid4(),
+        user_id=uuid.UUID(user_data["user_id"]) if "user_id" in user_data else uuid.uuid4(),
         email=user_data["email"],
         hashed_password="$2b$12$dummy_hashed_password",  # 테스트용 더미 비밀번호
         name=user_data["name"],

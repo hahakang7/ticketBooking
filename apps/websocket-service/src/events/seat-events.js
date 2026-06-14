@@ -1,5 +1,6 @@
 import redisService from '../services/redis-service.js'
 import logger from '../utils/logger.js'
+import { wsMessagesTotal, wsMessageLatency } from '../metrics.js'
 import { broadcastToSSEClients } from '../routes/sse-routes.js'
 
 // 이미 구독한 Redis 채널 추적 (중복 구독 방지)
@@ -13,6 +14,9 @@ async function subscribeToSeatUpdates(eventId, seatService) {
   try {
     await redisService.subscribe(channel, (data) => {
       // core-api 발행 형식: { event_id, seats: [{seat_id, status}], timestamp }
+      const publishedAt = data.timestamp ? new Date(data.timestamp).getTime() : Date.now()
+      const latencySeconds = (Date.now() - publishedAt) / 1000
+
       const targetEventId = data.event_id || eventId
       const seats = Array.isArray(data.seats)
         ? data.seats.map((s) => ({ seatId: s.seat_id, status: s.status }))
@@ -27,6 +31,8 @@ async function subscribeToSeatUpdates(eventId, seatService) {
         timestamp: data.timestamp,
       })
 
+      wsMessageLatency.observe(latencySeconds)
+      wsMessagesTotal.labels({ event_name: 'seat_status_updated' }).inc(seats.length)
       logger.debug(`Seat batch update broadcasted: event=${targetEventId} count=${seats.length}`)
     })
     logger.info(`Subscribed to Redis channel: ${channel}`)

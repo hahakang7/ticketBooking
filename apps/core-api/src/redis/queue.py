@@ -10,8 +10,10 @@ def add_to_queue(r: redis_lib.Redis, event_id: str, user_id: str, timestamp: Opt
   """대기열 추가 (ZADD + EXPIRE)"""
   score = timestamp if timestamp is not None else time.time()
   key = QUEUE_KEY(event_id)
-  r.zadd(key, {user_id: score})
-  r.expire(key, QUEUE_TTL)
+  pipe = r.pipeline()
+  pipe.zadd(key, {user_id: score})
+  pipe.expire(key, QUEUE_TTL)
+  pipe.execute()
 
 
 def get_position(r: redis_lib.Redis, event_id: str, user_id: str) -> Optional[int]:

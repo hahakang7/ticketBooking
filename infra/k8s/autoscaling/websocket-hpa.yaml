@@ -1,14 +1,15 @@
-apiVersion: autoscaling/v2
+﻿apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
   name: websocket-hpa
+  namespace: ticket-system
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
     name: websocket-service
-  minReplicas: 5
-  maxReplicas: 50
+  minReplicas: 2
+  maxReplicas: 10
   metrics:
     - type: Resource
       resource:
@@ -36,6 +37,6 @@ spec:
           value: 200
           periodSeconds: 15
         - type: Pods
-          value: 10
+          value: 5
           periodSeconds: 15
       selectPolicy: Max

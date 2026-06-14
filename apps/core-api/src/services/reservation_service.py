@@ -4,15 +4,17 @@ from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import List
 import json
+import time
 
 import redis as redis_lib
 from sqlalchemy.orm import Session
 from sqlalchemy import and_
 
+from src.metrics import duplicate_reservation_total, reservation_duration_seconds
 from src.models.seat import Seat
 from src.models.reservation import Reservation
 from src.redis.lock import reservation_lock, LockAcquireError
-from src.redis.constants import SEAT_HOLD_KEY, SEAT_HOLD_TTL, CACHE_SEATS_KEY
+from src.redis.constants import SEAT_HOLD_KEY, SEAT_HOLD_TTL, CACHE_SEATS_KEY, CACHE_AVAILABLE_SEATS_KEY
 from src.repositories.reservation_repository import ReservationRepository
 from src.repositories.seat_repository import SeatRepository
 from src.schemas.reservation_schema import ReservationResponse
@@ -50,6 +52,7 @@ class ReservationService:
     """
     user_uuid = uuid.UUID(user_id)
     event_uuid = uuid.UUID(event_id)
+    _start = time.perf_counter()
 
     with reservation_lock(self.r, event_id):
       # --- DB 레벨 double-check ---
@@ -57,6 +60,7 @@ class ReservationService:
         user_uuid, event_uuid
       )
       if existing:
+        duplicate_reservation_total.inc()
         raise DuplicateReservationError(
           f"User {user_id} already has a held reservation for event {event_id}"
         )
@@ -119,6 +123,7 @@ class ReservationService:
 
     # 총 금액 계산
     total_price = sum(s.price for s in seats)
+    reservation_duration_seconds.observe(time.perf_counter() - _start)
     return self._to_response(reservation, total_price)
 
   def cancel_reservation(
@@ -319,8 +324,11 @@ class ReservationService:
     })
     try:
       # 좌석 상태 변경 시 캐시 즉시 무효화
-      self.r.delete(CACHE_SEATS_KEY(event_id))
-      self.r.publish(channel, message)
+      pipe = self.r.pipeline()
+      pipe.delete(CACHE_SEATS_KEY(event_id))
+      pipe.delete(CACHE_AVAILABLE_SEATS_KEY(event_id))
+      pipe.publish(channel, message)
+      pipe.execute()
     except Exception as e:
       # Pub/Sub 실패는 예약 실패로 이어지지 않음 (best-effort)
       logger.warning(f"Pub/Sub publish failed: {e}")

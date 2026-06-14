@@ -10,21 +10,6 @@ from sqlalchemy.orm import Session
 logger = logging.getLogger("core-api")
 
 
-@pytest.fixture
-def mock_redis():
-  r = MagicMock()
-  r.set.return_value = True
-  r.exists.return_value = 0
-  r.register_script.return_value = MagicMock()
-  r.get.return_value = None
-  return r
-
-
-@pytest.fixture
-def mock_db():
-  return MagicMock(spec=Session)
-
-
 class TestRedisLock:
   """Redis 분산 락 상세 테스트"""
 
@@ -143,7 +128,7 @@ class TestReservationService:
     mock_db.flush.return_value = None
     mock_db.commit.return_value = None
 
-    service = ReservationService(fake_redis, mock_db)
+    service = ReservationService(mock_db, fake_redis)
 
     # 실제로는 hold_seats 메서드가 내부에서 락을 다루므로,
     # 여기서는 락 동작만 검증 가능

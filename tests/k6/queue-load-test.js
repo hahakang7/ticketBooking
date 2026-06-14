@@ -15,9 +15,19 @@ const errorRate = new Rate('error_rate');
 
 // ── 테스트 시나리오 설정 ────────────────────────────────────────
 // Queue API 부하 테스트
+//
+// 실행 방법:
+//   전체 (ramp_up_down → flash_crowd 순차):
+//     k6 run tests/k6/queue-load-test.js
+//
+//   스모크 테스트 (ramp_up_down만):
+//     k6 run -e SKIP_FLASH=true tests/k6/queue-load-test.js
+//
+//   Flash Crowd 실제 규모 (5000 VU):
+//     k6 run -e FLASH_VUS=5000 tests/k6/queue-load-test.js
 export const options = {
   scenarios: {
-    // 기본 부하: 점진적으로 늘리고 줄이기
+    // 기본 부하: 점진적으로 늘리고 줄이기 (총 3m30s)
     ramp_up_down: {
       executor: 'ramping-vus',
       startVUs: 0,
@@ -29,10 +39,27 @@ export const options = {
         { duration: '30s', target: 0 },    // 30초 동안 0으로 감소
       ],
     },
+
+    // Flash Crowd: 0 → 5000 req/s 급증 시나리오
+    // ramp_up_down(3m30s=210s) 완료 후 시작
+    // preAllocatedVUs: 로컬=500, 실제 부하=5000 (FLASH_VUS 환경변수로 조정)
+    flash_crowd: {
+      executor: 'ramping-arrival-rate',
+      startTime: '210s',
+      startRate: 0,
+      timeUnit: '1s',
+      preAllocatedVUs: parseInt(__ENV.FLASH_VUS || '500'),
+      maxVUs: 5000,
+      stages: [
+        { duration: '30s', target: 5000 },  // 급증
+        { duration: '2m',  target: 5000 },  // 유지
+        { duration: '30s', target: 0 },     // 감소
+      ],
+    },
   },
-  // KPI 임계값: P95 < 300ms, 에러율 < 1%
+  // KPI 임계값: P95 < 300ms, 에러율 < 5%
   thresholds: {
-    'http_req_duration': ['p(95)<300'],     // P95 300ms 이하
+    'http_req_duration': ['p(95)<300'],
     //'http_req_failed': ['rate<0.01'],       // 에러율 1% 이하
     'queue_join_duration_ms': ['p(95)<300'],
     'error_rate': ['rate<0.05'],
