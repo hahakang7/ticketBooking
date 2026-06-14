@@ -1,0 +1,17 @@
+{
+  "name": "ws-sse-benchmark",
+  "version": "1.0.0",
+  "description": "WebSocket vs SSE 성능 비교 벤치마크",
+  "type": "module",
+  "scripts": {
+    "bench": "node ws-vs-sse.js",
+    "bench:light": "CONCURRENT=10 MESSAGES=20 node ws-vs-sse.js",
+    "bench:medium": "CONCURRENT=50 MESSAGES=30 node ws-vs-sse.js",
+    "bench:heavy": "CONCURRENT=200 MESSAGES=50 node ws-vs-sse.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "socket.io": "^4.7.2",
+    "socket.io-client": "^4.7.2"
+  }
+}

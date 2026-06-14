@@ -12,6 +12,7 @@ import { setupConnectionEvents } from './events/connection.js'
 import { setupSeatEvents } from './events/seat-events.js'
 import { setupSubscriptionEvents } from './events/subscription.js'
 import { register, wsConnectionsActive, wsDisconnectionsTotal } from './metrics.js'
+import sseRouter, { getSSEClientCount } from './routes/sse-routes.js'
 
 const app = express()
 const httpServer = createServer(app)
@@ -28,6 +29,15 @@ const io = new Server(httpServer, {
 
 // 미들웨어
 app.use(express.json())
+app.use('/sse', sseRouter)
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', config.CORS_ORIGIN)
+  res.header('Access-Control-Allow-Credentials', 'true')
+  res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+  if (req.method === 'OPTIONS') return res.sendStatus(204)
+  next()
+})
 
 // Socket.IO 미들웨어
 io.use(authMiddleware)
@@ -64,6 +74,9 @@ app.get('/stats', (req, res) => {
     connections: socketService.getConnectionStats(),
     events: {
       activeEvents: io.engine.clientsCount,
+    },
+    sse: {
+      note: 'per-event SSE client count available via getSSEClientCount(eventId)',
     },
   })
 })
