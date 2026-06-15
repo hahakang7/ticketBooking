@@ -104,7 +104,7 @@ k6 run \
   -e PEAK_VUS="${PEAK_VUS}" \
   -e PRE_VUS="${PRE_VUS}" \
   --summary-export="${RESULTS_DIR}/test1_summary.json" \
-  "${K6_SCRIPT}" 2>&1 | tee "${RESULTS_DIR}/test1_output.txt"
+  "${K6_SCRIPT}" 2>&1 | tee "${RESULTS_DIR}/test1_output.txt" || true
 
 PODS_AFTER_T1=$(get_pod_count)
 log "TEST 1 완료. Pod 변화: ${PODS_BEFORE_T1} → ${PODS_AFTER_T1}"
@@ -147,6 +147,15 @@ if [ "${PRESCALE_TRIGGERED}" = false ]; then
   warn "prescale 미감지 (이벤트 오픈 윈도우 확인 필요)"
 fi
 
+# prescale 후 신규 파드가 모두 Running 상태가 될 때까지 대기 (Karpenter 노드 프로비저닝 포함)
+log "신규 파드 Ready 대기 (최대 5분)... Karpenter 노드 프로비저닝 포함"
+kubectl wait --for=condition=ready pod -l app=core-api -n "${NS}" --timeout=300s 2>/dev/null \
+  && log "✅ 모든 core-api 파드 Ready!" \
+  || warn "일부 파드 Ready 타임아웃 — 테스트 계속 진행"
+
+PODS_READY=$(get_pod_count)
+info "k6 시작 시점 Ready 파드: ${PODS_READY}개"
+
 info "k6 실행 중... (약 4분 소요)"
 
 k6 run \
@@ -154,7 +163,7 @@ k6 run \
   -e PEAK_VUS="${PEAK_VUS}" \
   -e PRE_VUS="${PRE_VUS}" \
   --summary-export="${RESULTS_DIR}/test2_summary.json" \
-  "${K6_SCRIPT}" 2>&1 | tee "${RESULTS_DIR}/test2_output.txt"
+  "${K6_SCRIPT}" 2>&1 | tee "${RESULTS_DIR}/test2_output.txt" || true
 
 PODS_AFTER_T2=$(get_pod_count)
 log "TEST 2 완료. Pod 변화: ${PODS_BEFORE_T2} → ${PODS_AFTER_T2}"

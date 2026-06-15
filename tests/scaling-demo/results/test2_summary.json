@@ -1,0 +1,1444 @@
+{
+    "metrics": {
+        "checks": {
+            "passes": 1766,
+            "fails": 1685,
+            "value": 0.5117357287742683
+        },
+        "queue_wait_duration_ms": {
+            "avg": 3165.6864705882354,
+            "min": 2,
+            "med": 13,
+            "max": 54651,
+            "p(90)": 14154,
+            "p(95)": 22201.55
+        },
+        "duplicate_reservations_total": {
+            "count": 0,
+            "rate": 0,
+            "thresholds": {
+                "count<1": false
+            }
+        },
+        "http_req_failed": {
+            "passes": 9321,
+            "fails": 6515,
+            "thresholds": {
+                "rate<0.05": true
+            },
+            "value": 0.5885956049507451
+        },
+        "data_sent": {
+            "count": 5844810,
+            "rate": 24318.76682107745
+        },
+        "http_req_duration{expected_response:true}": {
+            "p(95)": 100.76378999999996,
+            "avg": 32.75802333077522,
+            "min": 4.3636,
+            "med": 17.8259,
+            "max": 563.5882,
+            "p(90)": 69.88632000000013
+        },
+        "reservation_duration_ms": {
+            "avg": 38.53333333333333,
+            "min": 20,
+            "med": 35,
+            "max": 106,
+            "p(90)": 49.199999999999996,
+            "p(95)": 68.19999999999995,
+            "thresholds": {
+                "p(95)<300": false
+            }
+        },
+        "http_reqs": {
+            "count": 15836,
+            "rate": 65.88956550830267
+        },
+        "http_req_waiting": {
+            "avg": 25.59013299444303,
+            "min": 1.1742,
+            "med": 14.99345,
+            "max": 462.1437,
+            "p(90)": 44.164,
+            "p(95)": 75.2615
+        },
+        "http_req_duration": {
+            "avg": 27.534436953776186,
+            "min": 1.1742,
+            "med": 15.447949999999999,
+            "max": 563.5882,
+            "p(90)": 53.249,
+            "p(95)": 86.072575,
+            "thresholds": {
+                "p(95)<300": false
+            }
+        },
+        "http_req_connecting": {
+            "max": 1019.0867,
+            "p(90)": 0,
+            "p(95)": 0,
+            "avg": 0.17607505683253344,
+            "min": 0,
+            "med": 0
+        },
+        "http_req_receiving": {
+            "med": 0,
+            "max": 342.3391,
+            "p(90)": 1.8588,
+            "p(95)": 3.68215,
+            "avg": 1.9151254672897235,
+            "min": 0
+        },
+        "http_req_blocked": {
+            "p(95)": 0,
+            "avg": 0.18551896312200045,
+            "min": 0,
+            "med": 0,
+            "max": 1019.0867,
+            "p(90)": 0
+        },
+        "http_req_tls_handshaking": {
+            "avg": 0,
+            "min": 0,
+            "med": 0,
+            "max": 0,
+            "p(90)": 0,
+            "p(95)": 0
+        },
+        "vus": {
+            "max": 124,
+            "value": 2,
+            "min": 0
+        },
+        "http_req_failed{phase:open_spike}": {
+            "passes": 9320,
+            "fails": 5184,
+            "thresholds": {
+                "rate<0.01": true
+            },
+            "value": 0.6425813568670712
+        },
+        "data_received": {
+            "count": 99928847,
+            "rate": 415778.49902599485
+        },
+        "reservation_success_total": {
+            "count": 15,
+            "rate": 0.062411182282428646
+        },
+        "payment_success_rate": {
+            "passes": 15,
+            "fails": 0,
+            "thresholds": {
+                "rate>0.9": false
+            },
+            "value": 1
+        },
+        "group_duration": {
+            "avg": 2539.5766855152733,
+            "min": 1.9236,
+            "med": 2068.31495,
+            "max": 54651.1145,
+            "p(90)": 4030.3443500000008,
+            "p(95)": 6061.545604999998
+        },
+        "iteration_duration": {
+            "p(95)": 12380.966404999996,
+            "avg": 3601.1471529341725,
+            "min": 15.8902,
+            "med": 3047.0159000000003,
+            "max": 55814.6458,
+            "p(90)": 4785.944040000002
+        },
+        "iterations": {
+            "rate": 17.44184507519606,
+            "count": 4192
+        },
+        "http_req_sending": {
+            "max": 17.2088,
+            "p(90)": 0,
+            "p(95)": 0,
+            "avg": 0.02917849204344531,
+            "min": 0,
+            "med": 0
+        },
+        "vus_max": {
+            "value": 130,
+            "min": 130,
+            "max": 130
+        }
+    },
+    "setup_data": {
+        "eventId": "27a406f4-4f8b-47a7-af4a-6bb3cbd8ea1b",
+        "seats": [
+            {
+                "price": 140000,
+                "seat_id": "850e2c01-c0a2-43be-a491-227fd29d2c19"
+            },
+            {
+                "price": 140000,
+                "seat_id": "236ac934-02a7-4179-b53f-27470cb8d737"
+            },
+            {
+                "price": 140000,
+                "seat_id": "95701edc-6320-4ff7-86fd-4af865574d9b"
+            },
+            {
+                "price": 140000,
+                "seat_id": "2c4c5258-f9f5-4133-8e7d-6d553ccea214"
+            },
+            {
+                "price": 140000,
+                "seat_id": "31ea261e-7552-4b36-ad3a-24a027742919"
+            },
+            {
+                "price": 140000,
+                "seat_id": "95b26fb6-c70c-48d3-89b7-dd4b112912de"
+            },
+            {
+                "price": 140000,
+                "seat_id": "757ddeb4-7c1d-494d-ad17-e02079cabf3d"
+            },
+            {
+                "price": 140000,
+                "seat_id": "4f285f5e-fc28-44d7-aaad-787d7e069611"
+            },
+            {
+                "price": 140000,
+                "seat_id": "15324c21-9d42-4822-b842-0f1c112fdbf9"
+            },
+            {
+                "price": 140000,
+                "seat_id": "dce82e1b-8225-4d52-8592-ed7a6450b3ca"
+            },
+            {
+                "price": 140000,
+                "seat_id": "a276c895-d382-40cf-b7d3-3c56982b9ccf"
+            },
+            {
+                "price": 140000,
+                "seat_id": "22e0fe4e-9b1a-45d3-aec1-520b05ff24e9"
+            },
+            {
+                "price": 140000,
+                "seat_id": "8bd80594-6689-4205-911f-a4c450f401ac"
+            },
+            {
+                "price": 140000,
+                "seat_id": "627896f7-78e0-42bf-8671-c32106aea7a5"
+            },
+            {
+                "price": 140000,
+                "seat_id": "af1b77b4-7c61-4adf-b189-d994ab756b0a"
+            },
+            {
+                "seat_id": "84ada534-10cc-4ec3-a4d7-d09fcfac0949",
+                "price": 140000
+            },
+            {
+                "price": 140000,
+                "seat_id": "a108a814-225f-4e29-920b-4a5fa9ced1d5"
+            },
+            {
+                "price": 140000,
+                "seat_id": "3142838a-093a-4641-bf00-6403a8ee4a7f"
+            },
+            {
+                "price": 140000,
+                "seat_id": "b57265e7-a316-4037-8351-b3d2c3aacdb5"
+            },
+            {
+                "price": 140000,
+                "seat_id": "42d78473-a988-49b2-8def-8918b87ccf7a"
+            },
+            {
+                "price": 140000,
+                "seat_id": "ff43c06b-1b72-40ae-a981-d401e3f59c3b"
+            },
+            {
+                "price": 140000,
+                "seat_id": "e15ea088-6e4a-4928-8dc8-a97c22a259b5"
+            },
+            {
+                "price": 140000,
+                "seat_id": "0aa564c0-f377-41fb-8d51-9a4cbc941d9f"
+            },
+            {
+                "price": 140000,
+                "seat_id": "b5efbd1d-1510-40d9-87ab-9829190a0830"
+            },
+            {
+                "price": 140000,
+                "seat_id": "704c6cb4-aad6-4c79-ac68-370de9c9d13d"
+            },
+            {
+                "price": 140000,
+                "seat_id": "d325779c-4d22-468b-941b-ea04c3f4c0ca"
+            },
+            {
+                "seat_id": "fd6c164f-1731-45fa-a544-03e598b599c7",
+                "price": 140000
+            },
+            {
+                "price": 140000,
+                "seat_id": "7f566660-355b-44aa-ad5e-7ae555a3cb2a"
+            },
+            {
+                "price": 140000,
+                "seat_id": "5bfa405c-ccc2-40d2-a1c6-4d23c2ba5a24"
+            },
+            {
+                "price": 140000,
+                "seat_id": "74ec969d-717c-45f9-bde7-57872be8085f"
+            },
+            {
+                "price": 140000,
+                "seat_id": "c1ebc9cf-32e2-4693-81dd-fdde1a6e4051"
+            },
+            {
+                "price": 140000,
+                "seat_id": "89cd1988-2cbc-4542-bd7d-6d1645593efb"
+            },
+            {
+                "price": 140000,
+                "seat_id": "653d2ca4-01a0-481e-a428-8823876ccc8a"
+            },
+            {
+                "price": 140000,
+                "seat_id": "6f7a622f-c9e3-4e28-9a48-129d0cccecb4"
+            },
+            {
+                "seat_id": "270e7aab-63ce-4ec6-abd6-9b0138a200a6",
+                "price": 140000
+            },
+            {
+                "price": 140000,
+                "seat_id": "20fcd88a-3c81-43ab-8ec1-0910ad41b4f2"
+            },
+            {
+                "price": 140000,
+                "seat_id": "d106bd2a-7333-4593-9012-1cad412ebed3"
+            },
+            {
+                "price": 140000,
+                "seat_id": "86f142bd-cb68-42d0-b776-447c5915f5ec"
+            },
+            {
+                "price": 140000,
+                "seat_id": "6cb94d96-1219-4d91-90e7-04b144da1afa"
+            },
+            {
+                "seat_id": "914a4539-62bc-4a8c-ba6e-da14ddbffc2a",
+                "price": 140000
+            },
+            {
+                "seat_id": "a41491dd-f064-488b-9d5d-076817234c57",
+                "price": 140000
+            },
+            {
+                "price": 140000,
+                "seat_id": "6855b675-e479-4fd2-bf14-6869ea299743"
+            },
+            {
+                "seat_id": "7697b2fc-f0b2-4480-9512-e0f0dc9fcdea",
+                "price": 140000
+            },
+            {
+                "price": 140000,
+                "seat_id": "485260a6-088e-4903-afb4-084c976c895e"
+            },
+            {
+                "price": 140000,
+                "seat_id": "a614eeb1-a8f5-4f90-b7bc-26539eedff2a"
+            },
+            {
+                "seat_id": "c3186435-fbf0-4552-b0fe-66adc8bc1463",
+                "price": 140000
+            },
+            {
+                "price": 140000,
+                "seat_id": "169c65f7-29a5-4c80-8124-230503ab4b06"
+            },
+            {
+                "price": 140000,
+                "seat_id": "119058ee-dfd1-45ac-a53c-e31ac22f8837"
+            },
+            {
+                "price": 140000,
+                "seat_id": "1b9627a8-cd8f-4d76-b6ca-5f7f98529627"
+            },
+            {
+                "price": 140000,
+                "seat_id": "f47c8971-1f0d-4945-8d2a-6fb41902bddc"
+            },
+            {
+                "price": 140000,
+                "seat_id": "18fd5016-9172-4d09-8767-135fec9646ed"
+            },
+            {
+                "price": 140000,
+                "seat_id": "ec82fb05-a538-4904-8fe8-9d2adffde733"
+            },
+            {
+                "price": 140000,
+                "seat_id": "a60ec661-7da0-44d7-90e0-c49a5c87c6f9"
+            },
+            {
+                "price": 140000,
+                "seat_id": "d44b5663-0fea-4e77-bc07-4267db403ae8"
+            },
+            {
+                "price": 140000,
+                "seat_id": "e5846595-a7a0-4f26-8371-1128b7483a61"
+            },
+            {
+                "seat_id": "cd916f18-2c93-49ba-a514-2c6b766d644d",
+                "price": 140000
+            },
+            {
+                "price": 140000,
+                "seat_id": "c798e830-37b3-45fd-b35b-88f8b87401f3"
+            },
+            {
+                "seat_id": "6d76ae12-1509-4477-b6cd-0c0571a11146",
+                "price": 140000
+            },
+            {
+                "price": 140000,
+                "seat_id": "53f22725-0ac7-45fd-a83b-28ddb42e5ce9"
+            },
+            {
+                "price": 140000,
+                "seat_id": "3b708055-d7f7-4283-8f2f-7aecfc29079a"
+            },
+            {
+                "price": 140000,
+                "seat_id": "8cdc702e-2ab8-403c-aa76-59a70b73b33c"
+            },
+            {
+                "seat_id": "8a835e97-9380-4725-bb4d-95a967a5375d",
+                "price": 140000
+            },
+            {
+                "price": 140000,
+                "seat_id": "4733a40a-aab2-4018-995f-4ef570bbdeab"
+            },
+            {
+                "price": 140000,
+                "seat_id": "dd72f523-1e50-44ae-81f7-2f8b5c0cf62e"
+            },
+            {
+                "price": 140000,
+                "seat_id": "cd60fd6e-b29d-42bb-bf39-d54002df23a2"
+            },
+            {
+                "price": 140000,
+                "seat_id": "c2744ff6-315d-4ef5-8472-300b70ba9985"
+            },
+            {
+                "price": 140000,
+                "seat_id": "97b487df-a383-4ae4-9593-c4c715391f00"
+            },
+            {
+                "price": 140000,
+                "seat_id": "bdd95011-f602-4505-b6b5-30c6915d0f12"
+            },
+            {
+                "price": 140000,
+                "seat_id": "91c31e85-06ea-4aca-88dc-8bd852d6d726"
+            },
+            {
+                "seat_id": "d5a5c14a-c7f0-4a45-b878-66172759ea74",
+                "price": 140000
+            },
+            {
+                "seat_id": "90559d44-169c-442a-be60-3089f13b16eb",
+                "price": 140000
+            },
+            {
+                "price": 140000,
+                "seat_id": "0359bd94-b62d-4bdd-8752-bdf7c6a4150e"
+            },
+            {
+                "price": 140000,
+                "seat_id": "a5bbfdfa-ff09-4fc5-b6ef-2ef03480637b"
+            },
+            {
+                "price": 140000,
+                "seat_id": "188efa78-4b5b-4214-a6be-95fd67ce7fee"
+            },
+            {
+                "price": 140000,
+                "seat_id": "f4d66db6-2dc7-4f92-8b8d-d4aec0ce5dbb"
+            },
+            {
+                "price": 140000,
+                "seat_id": "5fd52180-e935-495b-8a45-8f8121dc1f08"
+            },
+            {
+                "seat_id": "9fee9f8f-40f9-48b6-a0cb-9d5a1bfc63f3",
+                "price": 140000
+            },
+            {
+                "price": 140000,
+                "seat_id": "20dc9814-ad27-4262-86c4-9cc9f284bad3"
+            },
+            {
+                "seat_id": "1488e592-24d9-46f4-a2d0-cc5aeea4ee41",
+                "price": 140000
+            },
+            {
+                "price": 140000,
+                "seat_id": "39040911-89ea-4774-86ee-614d02c7b7a2"
+            },
+            {
+                "seat_id": "2af53ac4-2e02-425f-a8d8-bc3a4f2906bd",
+                "price": 140000
+            },
+            {
+                "price": 140000,
+                "seat_id": "8eb16fd1-0c8e-496d-8ce5-7f3829721f9c"
+            },
+            {
+                "seat_id": "2d16ad15-4820-420d-a937-1e90518f1316",
+                "price": 140000
+            },
+            {
+                "seat_id": "2b6f8923-85d7-4237-bfd1-60a2f7075e0c",
+                "price": 140000
+            },
+            {
+                "price": 140000,
+                "seat_id": "2bdc3f02-0dec-444b-942f-beb9723530a9"
+            },
+            {
+                "price": 140000,
+                "seat_id": "9e8bcc52-6fd8-471d-99db-8121bf305c42"
+            },
+            {
+                "price": 140000,
+                "seat_id": "7db36745-d357-42db-b9a4-2b282213ce8c"
+            },
+            {
+                "price": 140000,
+                "seat_id": "f9850e46-1655-48f0-9e73-3de35fef6c40"
+            },
+            {
+                "price": 140000,
+                "seat_id": "edb8f539-067d-40a8-abd5-d82cfc1044f6"
+            },
+            {
+                "price": 140000,
+                "seat_id": "df5fec41-43d6-4917-8491-b7f5c4706ff4"
+            },
+            {
+                "price": 140000,
+                "seat_id": "be24700c-8b7f-44d5-b403-1523d071d5de"
+            },
+            {
+                "price": 140000,
+                "seat_id": "104cf7af-a8f8-4541-9e00-a8cc58c9a6c1"
+            },
+            {
+                "price": 140000,
+                "seat_id": "3ad22eb8-ccb3-445d-9494-ebe57ac18b75"
+            },
+            {
+                "price": 140000,
+                "seat_id": "739bb942-27fe-449c-be9b-a27b5ce48b66"
+            },
+            {
+                "price": 140000,
+                "seat_id": "822cf560-cfcf-4daa-baa9-31cb80e9b626"
+            },
+            {
+                "seat_id": "dc549a6d-55a0-4e1a-9512-b21fd7a28f49",
+                "price": 140000
+            },
+            {
+                "seat_id": "5670f43e-0e17-4424-859a-b39eddc367a9",
+                "price": 140000
+            },
+            {
+                "seat_id": "65ae7b3c-e98f-42a3-b8bf-4d2f3dee0a32",
+                "price": 140000
+            },
+            {
+                "price": 140000,
+                "seat_id": "8361dcb0-03b7-4123-9122-36014f7d7b6d"
+            },
+            {
+                "seat_id": "4bb4a364-ab3a-454b-9a6f-9346b4dc9ea2",
+                "price": 140000
+            },
+            {
+                "seat_id": "a28a46f6-8252-41e0-801d-86a28d43b7d7",
+                "price": 140000
+            },
+            {
+                "price": 140000,
+                "seat_id": "09931a35-6119-4cca-9792-006b8849fb3d"
+            },
+            {
+                "price": 95000,
+                "seat_id": "b90cdf1f-c144-4472-af12-bce90e96256b"
+            },
+            {
+                "price": 95000,
+                "seat_id": "25685e4b-f524-4166-94fe-32cd23b6b3a4"
+            },
+            {
+                "price": 95000,
+                "seat_id": "f48e2a54-45ae-48f4-b591-cdc0de4e23c7"
+            },
+            {
+                "price": 95000,
+                "seat_id": "eb25a5cf-49e9-4f60-9e1d-3d07794b621a"
+            },
+            {
+                "price": 95000,
+                "seat_id": "736e750c-2ae4-4f3a-92e9-97932291186e"
+            },
+            {
+                "price": 95000,
+                "seat_id": "e2251618-4bac-4989-b936-d933fad85b9c"
+            },
+            {
+                "price": 95000,
+                "seat_id": "a70938e9-addd-4404-bb85-fc257883b170"
+            },
+            {
+                "price": 95000,
+                "seat_id": "03b17d30-88f4-47b6-80b8-ca8de3317b9c"
+            },
+            {
+                "seat_id": "dbbbad59-e9e6-45cc-8797-542de7065412",
+                "price": 95000
+            },
+            {
+                "price": 95000,
+                "seat_id": "981f6d5e-9817-42d9-87cf-ff25bc494a5c"
+            },
+            {
+                "seat_id": "0e33b8eb-21df-4b6a-92fd-e11176e11be5",
+                "price": 95000
+            },
+            {
+                "price": 95000,
+                "seat_id": "5b7d9724-1799-4776-b152-a2982aa67346"
+            },
+            {
+                "price": 95000,
+                "seat_id": "6c5098a8-f18e-4474-b151-5f7c769a5818"
+            },
+            {
+                "price": 95000,
+                "seat_id": "e90c843d-e3db-49ca-bfbb-d276e9cf3679"
+            },
+            {
+                "price": 95000,
+                "seat_id": "4b2efe48-2628-469a-b73b-4a090e69b4bc"
+            },
+            {
+                "price": 95000,
+                "seat_id": "b9e34b3c-b069-460a-936f-66f826238bb2"
+            },
+            {
+                "price": 95000,
+                "seat_id": "0a948ff3-0f26-4249-b3ba-f1140da3aa81"
+            },
+            {
+                "price": 95000,
+                "seat_id": "4f60b1d5-1739-4b6a-9475-d67c9638a7b4"
+            },
+            {
+                "price": 95000,
+                "seat_id": "66b60d4e-1d95-4556-a9da-83c79e338182"
+            },
+            {
+                "price": 95000,
+                "seat_id": "c789a196-2bd2-433c-ac92-416d25d6ce4f"
+            },
+            {
+                "price": 95000,
+                "seat_id": "e97a5bc4-1b1c-4e61-a419-78111062cea8"
+            },
+            {
+                "seat_id": "e7f882a2-75cb-4b12-b963-9ac3b58554f8",
+                "price": 95000
+            },
+            {
+                "price": 95000,
+                "seat_id": "8d60339b-2c90-4baa-b4bd-95fa8ab884ac"
+            },
+            {
+                "price": 95000,
+                "seat_id": "d4e94b8b-b46f-4e02-8865-cc0ff4fa2729"
+            },
+            {
+                "price": 95000,
+                "seat_id": "59b2a845-5fd1-4682-b841-c2fff806f800"
+            },
+            {
+                "seat_id": "16d21bb6-b931-4ef4-8ed4-30a74cc09b1a",
+                "price": 95000
+            },
+            {
+                "price": 95000,
+                "seat_id": "7a4f0298-fa6c-4948-b480-6c47327745e3"
+            },
+            {
+                "price": 95000,
+                "seat_id": "cb3dd930-1327-4aa9-baeb-1f9264a0cf54"
+            },
+            {
+                "price": 95000,
+                "seat_id": "bbc15a5d-779a-41d9-89ee-aa32b97ee9fa"
+            },
+            {
+                "price": 95000,
+                "seat_id": "8b82a021-e084-48f9-b344-1b57820f5cd2"
+            },
+            {
+                "price": 95000,
+                "seat_id": "c74e30e0-bf23-49ae-ac26-9c2a82ce07e1"
+            },
+            {
+                "price": 95000,
+                "seat_id": "dce408ee-f120-4050-abb2-b260eb13dfb7"
+            },
+            {
+                "price": 95000,
+                "seat_id": "331a3f8c-36e1-476c-91a1-65500e79bfdb"
+            },
+            {
+                "price": 95000,
+                "seat_id": "0888f006-ef5d-47c3-8b5a-884b9b01f2eb"
+            },
+            {
+                "price": 95000,
+                "seat_id": "a94b2895-e13d-476f-8086-2a66350d51fb"
+            },
+            {
+                "price": 95000,
+                "seat_id": "255d8f29-42d6-4fcc-9c64-3491a133f541"
+            },
+            {
+                "price": 95000,
+                "seat_id": "48f9fd96-2720-401c-9613-8704eb677bc3"
+            },
+            {
+                "price": 95000,
+                "seat_id": "a422c204-2318-4d8e-a767-1536c5169da8"
+            },
+            {
+                "price": 95000,
+                "seat_id": "3b138df8-0d45-4212-b9b7-0428febd8e5d"
+            },
+            {
+                "price": 95000,
+                "seat_id": "1db0faec-1a71-4ace-ae73-d5e0db21c191"
+            },
+            {
+                "price": 95000,
+                "seat_id": "df7e3961-f55e-411f-afe1-9c9f7a3b0cbe"
+            },
+            {
+                "price": 95000,
+                "seat_id": "06e766f3-dbfb-40ef-8ffc-389c07dc64c3"
+            },
+            {
+                "price": 95000,
+                "seat_id": "3d9cf33e-5ef9-4fb6-b141-42eaaadd8094"
+            },
+            {
+                "price": 95000,
+                "seat_id": "277b6cb1-21ed-4d58-8700-1c5b7fb7f62b"
+            },
+            {
+                "price": 95000,
+                "seat_id": "56e96a6c-c1ab-4625-a5b8-d918c3aba1ab"
+            },
+            {
+                "seat_id": "429b1dd6-3a39-4a8d-a88f-5c5948cc335a",
+                "price": 95000
+            },
+            {
+                "price": 95000,
+                "seat_id": "22e1af30-54dc-461d-8ff6-d469c8831d34"
+            },
+            {
+                "price": 95000,
+                "seat_id": "2f05a807-25c8-4365-a9dd-8cc63b37a551"
+            },
+            {
+                "price": 95000,
+                "seat_id": "def79f2b-8a80-4987-ba42-aa972a850f1b"
+            },
+            {
+                "price": 95000,
+                "seat_id": "052ee88c-7ef9-425e-b0e9-d397f7bcbd1e"
+            },
+            {
+                "price": 95000,
+                "seat_id": "9aad4bfa-a6f7-4116-8e02-a4396cbab8ef"
+            },
+            {
+                "price": 95000,
+                "seat_id": "198b4666-e49f-435e-b2a9-1a34a5ff5478"
+            },
+            {
+                "price": 95000,
+                "seat_id": "4dc87380-9838-41fe-8f7f-8a489f77b800"
+            },
+            {
+                "seat_id": "575c9007-c13b-449d-9c49-b8aad0505f0f",
+                "price": 95000
+            },
+            {
+                "price": 95000,
+                "seat_id": "1f5a243b-e7ea-4e00-95d7-af4bdfa3fc4b"
+            },
+            {
+                "seat_id": "2ba29c8e-c05d-4cbb-b478-8c458a67e196",
+                "price": 95000
+            },
+            {
+                "price": 95000,
+                "seat_id": "791776fe-6ce4-4be3-a29b-31f885bc8787"
+            },
+            {
+                "price": 95000,
+                "seat_id": "4962a937-898c-481d-a7f6-b41489715622"
+            },
+            {
+                "seat_id": "6dd8deee-2536-4c35-be1a-9427179aa05a",
+                "price": 95000
+            },
+            {
+                "seat_id": "fec37b62-5174-4255-b470-149d9c862d08",
+                "price": 95000
+            },
+            {
+                "price": 95000,
+                "seat_id": "16b5282b-c22a-4431-b975-d1ec47a668e2"
+            },
+            {
+                "price": 95000,
+                "seat_id": "c5e2180e-996e-4c05-bc59-3d64730da118"
+            },
+            {
+                "seat_id": "ed3a38bf-f522-41d0-b2b2-04e5c3602140",
+                "price": 95000
+            },
+            {
+                "price": 95000,
+                "seat_id": "705e6578-1eb0-4ffb-9233-b7fb40f8bd15"
+            },
+            {
+                "price": 95000,
+                "seat_id": "158bc4cf-7b90-4380-ae97-a972ffd29ff1"
+            },
+            {
+                "price": 95000,
+                "seat_id": "fee3898e-b20a-4bf3-8c9a-dcdf857c065a"
+            },
+            {
+                "price": 95000,
+                "seat_id": "299aa746-21b2-4d79-b599-0605b0d2ecd7"
+            },
+            {
+                "price": 95000,
+                "seat_id": "0d7896d9-f5fb-4a52-a571-d0e3f18e3370"
+            },
+            {
+                "price": 95000,
+                "seat_id": "14e8ad77-82ba-4370-92d7-1c7e4dd379b1"
+            },
+            {
+                "price": 95000,
+                "seat_id": "1c1cf33b-f3c7-4ee6-8303-1c1263d9d0d5"
+            },
+            {
+                "price": 95000,
+                "seat_id": "ce800a79-05ca-4668-9640-309670098aa0"
+            },
+            {
+                "price": 95000,
+                "seat_id": "e0a3ba64-7e6e-43c3-b2d0-832c6e9a80bd"
+            },
+            {
+                "price": 95000,
+                "seat_id": "2e943e41-ede7-4e4d-9706-5004a9e53b8c"
+            },
+            {
+                "price": 95000,
+                "seat_id": "3d8ee07e-5324-4bf9-afcf-15abc64c4f2f"
+            },
+            {
+                "price": 95000,
+                "seat_id": "c7ce88d0-7776-4019-800c-5b85b9c399ef"
+            },
+            {
+                "price": 95000,
+                "seat_id": "8660c13c-82f9-4bbb-a56b-9dc4015428ea"
+            },
+            {
+                "price": 95000,
+                "seat_id": "3266badb-58a1-4f45-9ccc-66f07a3085f7"
+            },
+            {
+                "price": 95000,
+                "seat_id": "31814983-69ce-42c6-a6b5-62f9de968f2f"
+            },
+            {
+                "price": 95000,
+                "seat_id": "06e546c7-cadf-4dc4-941e-81e8f7355af9"
+            },
+            {
+                "price": 95000,
+                "seat_id": "679b2b63-d0ad-41e5-a85a-e7346222572a"
+            },
+            {
+                "price": 95000,
+                "seat_id": "acd3bac4-4b24-4c7c-85f9-8439d30ff4c2"
+            },
+            {
+                "price": 95000,
+                "seat_id": "5c260309-e1d9-42c1-b0b2-2409ab21b8f3"
+            },
+            {
+                "price": 95000,
+                "seat_id": "3c14a157-839c-4feb-9edd-e27e038188a7"
+            },
+            {
+                "price": 95000,
+                "seat_id": "0ca93a55-55b5-4eea-8315-f5e3c5663350"
+            },
+            {
+                "price": 95000,
+                "seat_id": "f3c90a39-346b-44ad-abd2-30d8ed0a5cd0"
+            },
+            {
+                "seat_id": "0307c04c-f950-4ad5-a83e-d861a9c1cd6d",
+                "price": 95000
+            },
+            {
+                "price": 95000,
+                "seat_id": "e854b6d2-14d6-4d4b-9ff9-f7c7063a0bd2"
+            },
+            {
+                "price": 95000,
+                "seat_id": "21ab23e6-ef7b-4a65-9f1c-154634dc1742"
+            },
+            {
+                "seat_id": "860fe052-f7ef-4a1a-a412-a9c876cd9dc7",
+                "price": 95000
+            },
+            {
+                "price": 95000,
+                "seat_id": "37d7f657-dab0-4b6e-8f4e-4cfc20fc6ef7"
+            },
+            {
+                "price": 95000,
+                "seat_id": "94e6214a-e092-472a-8726-4f970d17b7c3"
+            },
+            {
+                "seat_id": "e6eb4a89-05be-4c64-be0c-eb791100aef6",
+                "price": 95000
+            },
+            {
+                "seat_id": "c24820c7-b678-46d7-a987-a8bf03ded12d",
+                "price": 95000
+            },
+            {
+                "price": 95000,
+                "seat_id": "e518c0a2-6305-40c0-9d11-3e3c1d55e73b"
+            },
+            {
+                "price": 95000,
+                "seat_id": "8b499ea6-f8f9-4c31-b045-df7038f41cc6"
+            },
+            {
+                "price": 95000,
+                "seat_id": "c0c428a1-2b50-40ec-8176-d5d531c4a74d"
+            },
+            {
+                "price": 95000,
+                "seat_id": "5f80666d-c50f-4c90-aff3-68057438ac56"
+            },
+            {
+                "price": 95000,
+                "seat_id": "833b1443-7941-4ed8-bb21-30ac5221242d"
+            },
+            {
+                "price": 95000,
+                "seat_id": "5b225fc2-6703-46ed-800e-349aaa8bb7f3"
+            },
+            {
+                "seat_id": "0fc3a9a8-9355-4d89-9027-1d022daddf54",
+                "price": 95000
+            },
+            {
+                "price": 95000,
+                "seat_id": "74f7dfdd-3021-4248-ab24-50f14525f71b"
+            },
+            {
+                "seat_id": "a4912bdd-a08c-4b69-b15c-16538c0b5d38",
+                "price": 95000
+            },
+            {
+                "price": 95000,
+                "seat_id": "a3098262-f3fa-46be-8289-7a5edc76be00"
+            },
+            {
+                "price": 95000,
+                "seat_id": "7adb04e0-f059-4aa1-9ae0-213f628fa374"
+            },
+            {
+                "price": 95000,
+                "seat_id": "7a9ec2f5-060f-43a9-b17f-35118c313fa6"
+            },
+            {
+                "seat_id": "b69c1fc1-b73c-436c-8dc8-6876b4ec85c8",
+                "price": 95000
+            },
+            {
+                "price": 95000,
+                "seat_id": "7c6cc640-7af1-4d76-b9ca-9d5b69dd1978"
+            },
+            {
+                "price": 95000,
+                "seat_id": "4f7a8446-3cf0-44e9-9dad-5b96bbc0e30d"
+            },
+            {
+                "price": 95000,
+                "seat_id": "62b602bb-380c-465f-89ab-aaec9b5ecc5b"
+            },
+            {
+                "price": 95000,
+                "seat_id": "fa9817b6-0764-4a05-8d17-daf42f60f352"
+            },
+            {
+                "price": 95000,
+                "seat_id": "35001284-1287-4dc8-91b0-85c0b6eae5ae"
+            },
+            {
+                "price": 95000,
+                "seat_id": "8d59b67b-040d-4eab-ad0b-4561756d445b"
+            },
+            {
+                "price": 95000,
+                "seat_id": "3d067680-088e-4bed-8957-1688607d331b"
+            },
+            {
+                "price": 95000,
+                "seat_id": "d0a8a594-0320-4df9-a18e-35aacbbd213e"
+            },
+            {
+                "price": 95000,
+                "seat_id": "e6790b46-76e0-4b21-bc2a-4b3c5ea35c23"
+            },
+            {
+                "price": 95000,
+                "seat_id": "e5a1946c-b762-4c49-b17e-69411b02e964"
+            },
+            {
+                "price": 95000,
+                "seat_id": "2c8ec9cc-9cbb-4fd6-8330-cf6a981b6fec"
+            },
+            {
+                "price": 95000,
+                "seat_id": "177d91ba-8b29-4663-a6e7-64143258b431"
+            },
+            {
+                "price": 95000,
+                "seat_id": "e89e6d75-ee10-40f1-89b1-0c99598a150d"
+            },
+            {
+                "price": 95000,
+                "seat_id": "09a70e3f-95ff-4cd9-81ae-a185806f17e5"
+            },
+            {
+                "price": 95000,
+                "seat_id": "06dcc7d4-db88-4af9-92d7-8008b4dc05bc"
+            },
+            {
+                "price": 95000,
+                "seat_id": "cf57b5ee-f680-4835-aa3a-5df721cdaf03"
+            },
+            {
+                "price": 95000,
+                "seat_id": "117d4fd4-2062-4ea8-9cfa-501d23003f8e"
+            },
+            {
+                "price": 95000,
+                "seat_id": "e2e9e752-9414-4792-93d6-89c7e803e4a7"
+            },
+            {
+                "price": 95000,
+                "seat_id": "11ccef16-19a1-4ba2-add3-da9a03234cd6"
+            },
+            {
+                "price": 95000,
+                "seat_id": "e22150f9-52e2-4a11-b898-5fd09b61313f"
+            },
+            {
+                "price": 95000,
+                "seat_id": "dc404c83-1466-4a53-9f49-da0ca5253a6c"
+            },
+            {
+                "price": 95000,
+                "seat_id": "8b7433eb-7aca-498c-a1c8-36946233e1f1"
+            },
+            {
+                "price": 95000,
+                "seat_id": "2d123c2e-d9b8-439d-8cdd-519de16da6d1"
+            },
+            {
+                "price": 95000,
+                "seat_id": "2aefe255-8782-4102-be60-68d8a8fac270"
+            },
+            {
+                "price": 95000,
+                "seat_id": "2e6132da-234a-4bb3-9818-71cba3122872"
+            },
+            {
+                "price": 95000,
+                "seat_id": "c48fed07-b641-4808-a4a1-45f4a4d77860"
+            },
+            {
+                "seat_id": "5902899d-622d-4829-bf68-37c644b8a1ba",
+                "price": 95000
+            },
+            {
+                "seat_id": "b9dee013-649e-4388-a0a5-f3e61772c1f9",
+                "price": 95000
+            },
+            {
+                "seat_id": "f249fb30-c4d8-4b5e-87d3-d926bfd2e0a3",
+                "price": 95000
+            },
+            {
+                "price": 95000,
+                "seat_id": "75de16dd-be2c-46a8-9a37-45b12af85c97"
+            },
+            {
+                "price": 95000,
+                "seat_id": "8e99dc28-3649-4d4f-848e-9b6b21cbe691"
+            },
+            {
+                "price": 95000,
+                "seat_id": "26129f94-c298-4cf9-8c11-ce539d42a40f"
+            },
+            {
+                "price": 95000,
+                "seat_id": "95944bea-6830-4f31-af14-159f37f3238e"
+            },
+            {
+                "seat_id": "67e6114a-2ac7-440e-ae4e-9c89ac7c02fd",
+                "price": 95000
+            },
+            {
+                "price": 95000,
+                "seat_id": "cc70b8d0-8f13-4ae4-99c8-d47862e53da1"
+            },
+            {
+                "price": 95000,
+                "seat_id": "e45ff1d3-96ba-4d6e-b387-344a0cf62390"
+            },
+            {
+                "price": 95000,
+                "seat_id": "44305c3d-f930-4370-b05a-e0cabbfeb6be"
+            },
+            {
+                "price": 95000,
+                "seat_id": "1688fb43-1261-41b4-908d-10539102f5f9"
+            },
+            {
+                "price": 95000,
+                "seat_id": "e560dc05-15b3-4751-88fa-aab173b35b92"
+            },
+            {
+                "price": 95000,
+                "seat_id": "a86bf3aa-11c6-44f6-a404-5082eb60e22a"
+            },
+            {
+                "price": 95000,
+                "seat_id": "27de2635-52b7-4284-a536-5c5c89011aae"
+            },
+            {
+                "price": 95000,
+                "seat_id": "9c156488-a741-4ca9-a4ea-470fcb35ac7c"
+            },
+            {
+                "price": 95000,
+                "seat_id": "99f87cb7-abe0-491e-877b-6ac6a69d183c"
+            },
+            {
+                "seat_id": "d2c62546-49e3-4dc7-a658-ae46fa167afc",
+                "price": 95000
+            },
+            {
+                "price": 95000,
+                "seat_id": "5ad616e0-3448-44ea-b734-394ca8c23c8d"
+            },
+            {
+                "price": 95000,
+                "seat_id": "9b980ae5-c665-4464-8ee0-6390e0ce5eab"
+            },
+            {
+                "price": 95000,
+                "seat_id": "e40325c1-99ca-4006-b470-d1ea70d2bf87"
+            },
+            {
+                "price": 95000,
+                "seat_id": "b3c77c08-2566-42cc-99c3-b0b0e45bfbe1"
+            },
+            {
+                "price": 95000,
+                "seat_id": "c3efaf59-495a-4495-98c3-e2250511d027"
+            },
+            {
+                "price": 95000,
+                "seat_id": "854d23d8-a73f-4c91-ac4b-61b43fdb4125"
+            },
+            {
+                "seat_id": "230dd2c6-3fa9-417c-bb73-9c8bce60097f",
+                "price": 95000
+            },
+            {
+                "price": 95000,
+                "seat_id": "8338c378-5c31-439f-b3ac-feeb984176ee"
+            },
+            {
+                "price": 95000,
+                "seat_id": "66d6fe6a-126f-40e1-96b7-ab9b27b76a13"
+            },
+            {
+                "seat_id": "dbe9577b-0964-4277-8e9d-dc900b96ed02",
+                "price": 95000
+            },
+            {
+                "price": 95000,
+                "seat_id": "ffb88411-74bb-47d9-b4ad-c6c5ddc72de2"
+            },
+            {
+                "price": 95000,
+                "seat_id": "c37ebbbc-e1c8-41cf-9778-6571d3157e6d"
+            },
+            {
+                "price": 95000,
+                "seat_id": "0f72f800-efa0-4ae4-9e94-3126432481de"
+            },
+            {
+                "price": 95000,
+                "seat_id": "b54c7ad8-1e2d-4363-92ed-ef0d9a83a477"
+            },
+            {
+                "price": 95000,
+                "seat_id": "a657bf90-582c-40af-ac96-a70b21b8f6eb"
+            },
+            {
+                "price": 95000,
+                "seat_id": "c2ef7fbb-2d49-4a98-8af9-87e35347015f"
+            },
+            {
+                "price": 95000,
+                "seat_id": "aed9aee8-02e2-4db3-98ba-e72f5daa8b9c"
+            },
+            {
+                "price": 95000,
+                "seat_id": "4cb92e27-d1d5-40a1-9657-c13e55a28929"
+            },
+            {
+                "price": 95000,
+                "seat_id": "a97366e7-8fc6-4876-aa2d-8de8db04bada"
+            },
+            {
+                "price": 95000,
+                "seat_id": "e71a5454-415e-4621-b295-30ca731bee18"
+            },
+            {
+                "price": 95000,
+                "seat_id": "8deac07c-5b0f-4e88-8eb8-2051e73372d7"
+            },
+            {
+                "price": 95000,
+                "seat_id": "53e42c22-cf4e-4ede-8cab-0a79ef4f3262"
+            },
+            {
+                "price": 95000,
+                "seat_id": "117739dc-2a64-4738-b4ff-4322d78c72ab"
+            },
+            {
+                "seat_id": "04b86cfe-f4f5-44fc-a334-640724f71150",
+                "price": 95000
+            },
+            {
+                "price": 95000,
+                "seat_id": "2df7d084-4e04-4c7e-8dbf-fcd000cb0e3a"
+            },
+            {
+                "price": 95000,
+                "seat_id": "9d7afce0-18df-4a83-951b-d4604e59b077"
+            },
+            {
+                "price": 95000,
+                "seat_id": "83912501-4de7-4248-a37f-0981cca8245e"
+            },
+            {
+                "price": 95000,
+                "seat_id": "39fdd918-1e2a-4042-b3d4-008527a1a34d"
+            },
+            {
+                "seat_id": "ff668742-9a1f-4828-8be1-42950c2d2d40",
+                "price": 95000
+            },
+            {
+                "price": 95000,
+                "seat_id": "27b0eaba-cc41-4ec8-be90-b8c113fd1dc6"
+            },
+            {
+                "price": 95000,
+                "seat_id": "03143aa4-977e-4d70-88dc-bc6d880c05db"
+            },
+            {
+                "price": 95000,
+                "seat_id": "883ba1f7-ebfd-4d85-82b9-f2511a1dff06"
+            },
+            {
+                "price": 95000,
+                "seat_id": "3fba18f0-72dd-450f-85bd-796849f86bcf"
+            },
+            {
+                "price": 95000,
+                "seat_id": "d9306a10-0261-4c4e-bf8e-16fca60b5a76"
+            },
+            {
+                "price": 95000,
+                "seat_id": "7504dd5d-5d23-41bc-8bab-444c81f73c34"
+            },
+            {
+                "price": 95000,
+                "seat_id": "bb9abce4-0f46-42fc-a1ba-00fafbfbd9ed"
+            },
+            {
+                "price": 95000,
+                "seat_id": "6f379f87-3c9e-45f7-ba13-041a0a4c8926"
+            },
+            {
+                "price": 95000,
+                "seat_id": "17db5e12-0b05-43bc-bc7e-b972f189f964"
+            },
+            {
+                "price": 95000,
+                "seat_id": "6c8c8b40-9ead-47fd-9065-6a2d04299a3f"
+            },
+            {
+                "price": 95000,
+                "seat_id": "ef5265f0-d77c-4517-9d48-f6df4cc1fd09"
+            },
+            {
+                "price": 95000,
+                "seat_id": "6de12d21-a531-4221-8c7c-307f4dff7487"
+            },
+            {
+                "seat_id": "16750112-bf59-4474-9aa8-70f95ee98164",
+                "price": 95000
+            },
+            {
+                "price": 95000,
+                "seat_id": "bb567583-91a5-43ef-90cb-1b5b153dceb4"
+            },
+            {
+                "price": 95000,
+                "seat_id": "4024d958-15b2-4c2e-8d39-8c789c3c06a4"
+            },
+            {
+                "price": 95000,
+                "seat_id": "b18c5da5-b352-414c-89e0-94039edd127e"
+            },
+            {
+                "price": 95000,
+                "seat_id": "f00c839b-9fad-4563-b557-05126bdf01cd"
+            },
+            {
+                "price": 95000,
+                "seat_id": "89b8575d-6179-46bf-a603-5c98ba3ffa45"
+            },
+            {
+                "price": 95000,
+                "seat_id": "4cba5458-96da-4546-a081-54b95126c656"
+            }
+        ]
+    },
+    "root_group": {
+        "name": "",
+        "path": "",
+        "id": "d41d8cd98f00b204e9800998ecf8427e",
+        "groups": {
+            "이벤트 조회 (오픈 대기)": {
+                "name": "이벤트 조회 (오픈 대기)",
+                "path": "::이벤트 조회 (오픈 대기)",
+                "id": "488868fefced708153bfd61f66dc46b2",
+                "groups": {},
+                "checks": {}
+            },
+            "1. 대기열 진입": {
+                "name": "1. 대기열 진입",
+                "path": "::1. 대기열 진입",
+                "id": "5e5c9ecb5e63dd434ea403fc6d8b9de9",
+                "groups": {},
+                "checks": {
+                        "대기열 진입 성공 (200)": {
+                            "name": "대기열 진입 성공 (200)",
+                            "path": "::1. 대기열 진입::대기열 진입 성공 (200)",
+                            "id": "0e6ae86ebe08657f51360e37d9bce7ec",
+                            "passes": 1736,
+                            "fails": 0
+                        }
+                    }
+            },
+            "2. 대기열 대기": {
+                "name": "2. 대기열 대기",
+                "path": "::2. 대기열 대기",
+                "id": "0e395a45f2ad8b0373d8b0b1801e4f78",
+                "groups": {},
+                "checks": {
+                        "access_token 발급": {
+                            "name": "access_token 발급",
+                            "path": "::2. 대기열 대기::access_token 발급",
+                            "id": "568e9118415b861711d0e6adf50f4e5b",
+                            "passes": 15,
+                            "fails": 1685
+                        }
+                    }
+            },
+            "3. 좌석 예약": {
+                "name": "3. 좌석 예약",
+                "path": "::3. 좌석 예약",
+                "id": "8afb564062aeb50e8dcf9088d4686921",
+                "groups": {},
+                "checks": {}
+            },
+            "4. 결제": {
+                "name": "4. 결제",
+                "path": "::4. 결제",
+                "id": "86282aea16431a2dc4c25f58a831b661",
+                "groups": {},
+                "checks": {
+                        "결제 성공": {
+                            "id": "e5ebfb31e62c915249d780aa3620b71b",
+                            "passes": 15,
+                            "fails": 0,
+                            "name": "결제 성공",
+                            "path": "::4. 결제::결제 성공"
+                        }
+                    }
+            }
+        },
+        "checks": {}
+    }
+}

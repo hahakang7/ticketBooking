@@ -34,8 +34,9 @@ PG_POD=$(kubectl get pod -n "${NS}" -l app=postgres -o jsonpath='{.items[0].meta
 log "postgres pod: ${PG_POD}"
 
 # ── k8s Secret에서 DB 접속 정보 추출 ─────────────────────────────────
-PG_USER=$(kubectl get secret app-secrets -n "${NS}" -o jsonpath='{.data.POSTGRES_USER}' 2>/dev/null | base64 -d 2>/dev/null || echo "postgres")
-PG_DB=$(kubectl get secret app-secrets   -n "${NS}" -o jsonpath='{.data.POSTGRES_DB}'   2>/dev/null | base64 -d 2>/dev/null || echo "ticketdb")
+PG_USER=$(kubectl get secret app-secrets -n "${NS}" -o jsonpath='{.data.POSTGRES_USER}' 2>/dev/null | base64 -d 2>/dev/null || echo "user")
+PG_PASS=$(kubectl get secret app-secrets -n "${NS}" -o jsonpath='{.data.POSTGRES_PASSWORD}' 2>/dev/null | base64 -d 2>/dev/null || echo "password")
+PG_DB="booking_system"
 
 log "오픈 예정: ${MINUTES}분 후 / 모드: ${MODE} / 이벤트명: ${EVENT_NAME}"
 
@@ -52,10 +53,10 @@ fi
 log "이벤트 및 좌석(300석) 생성 중..."
 
 EVENT_ID=$(kubectl exec -n "${NS}" "${PG_POD}" -- \
-  psql -U "${PG_USER}" -d "${PG_DB}" -t -c "
+  env PGPASSWORD="${PG_PASS}" psql -U "${PG_USER}" -d "${PG_DB}" -t -c "
 BEGIN;
 
-INSERT INTO events (event_id, name, description, location, start_at, end_at, total_seats, available_seats)
+INSERT INTO events (event_id, name, description, location, start_at, end_at, total_seats, available_seats, created_at)
 VALUES (
   gen_random_uuid(),
   '${EVENT_NAME}',
@@ -63,8 +64,9 @@ VALUES (
   'Demo Venue Seoul',
   NOW() AT TIME ZONE 'UTC' + INTERVAL '${MINUTES} minutes',
   NOW() AT TIME ZONE 'UTC' + INTERVAL '4 hours',
+  30000,
   300,
-  300
+  NOW()
 );
 
 INSERT INTO seats (seat_id, event_id, section, row, seat_number, status, price)
