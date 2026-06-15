@@ -102,7 +102,7 @@ def run_prescale_check(db: Session, r) -> None:
         )
 
         # 3. HPA minReplicas 상향 (maxReplicas 초과 방지)
-        recommended = min(recommended, 6)
+        recommended = min(recommended, 30)  # HPA maxReplicas 상한만 적용
         if _patch_hpa_min_replicas(recommended):
             _scaled_events[event_id] = event.start_at.replace(tzinfo=timezone.utc)
             predicted_replicas_gauge.set(recommended)
