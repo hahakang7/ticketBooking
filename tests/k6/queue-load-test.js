@@ -81,6 +81,14 @@ export const options = baseOptions;
 // ── 공통 헤더 ──────────────────────────────────────────────────
 const headers = { 'Content-Type': 'application/json' };
 
+// VU별 고유 IP로 Rate Limiter 우회 (rate_limiter.py는 X-Forwarded-For 헤더를 우선 읽음)
+const params = {
+  headers: {
+    'Content-Type': 'application/json',
+    'X-Forwarded-For': `10.${Math.floor(__VU / 256)}.${__VU % 256}.1`,
+  },
+};
+
 // ── 헬스 체크 (사전 조건 검증) ──────────────────────────────────
 export function setup() {
   const res = http.get(`${BASE_URL}/health`);
@@ -115,7 +123,7 @@ export default function (data) {
       event_id: eventId,
     });
 
-    const res = http.post(`${BASE_URL}/api/queue/join`, payload, { headers });
+    const res = http.post(`${BASE_URL}/api/queue/join`, payload, params);
     const duration = Date.now() - startTime;
     queueJoinDuration.add(duration);
 
@@ -144,15 +152,18 @@ export default function (data) {
       // join 응답에서 queue_token 추출
       const joinBody = JSON.parse(res.body);
       const queueToken = joinBody?.data?.queue_token;
-      const authHeaders = {
-        ...headers,
-        'Authorization': `Bearer ${queueToken}`,
+      const authParams = {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${queueToken}`,
+          'X-Forwarded-For': `10.${Math.floor(__VU / 256)}.${__VU % 256}.1`,
+        },
       };
 
       sleep(0.5);
       const statusRes = http.get(
         `${BASE_URL}/api/queue/status?user_id=${userId}&event_id=${eventId}`,
-        { headers: authHeaders }
+        authParams
       );
       queueStatusDuration.add(Date.now() - startTime - 500);
 

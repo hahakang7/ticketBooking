@@ -7,7 +7,7 @@ settings = get_settings()
 redis_client = redis.from_url(
   settings.redis_url,
   decode_responses=True,
-  max_connections=50,     # 추가: 명시적 커넥션 풀 제어
+  max_connections=100,    # 50 → 100: 고부하 시 풀 고갈 방지 (3500 RPS × queue/rate_limiter 동시 접근)
   socket_connect_timeout=3,
   socket_timeout=3,
   socket_keepalive=True,

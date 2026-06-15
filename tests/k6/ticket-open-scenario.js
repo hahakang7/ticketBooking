@@ -111,13 +111,19 @@ export function setup() {
 // ── 오픈 전 시나리오: 이벤트 페이지 조회 (인증 불필요) ───────────────────
 export function browseEvents(data) {
   const { eventId } = data;
+  const params = {
+    headers: {
+      'X-Forwarded-For': `10.${Math.floor(__VU / 256)}.${__VU % 256}.1`,
+    },
+    tags: { name: 'browse' },
+  };
 
   group('이벤트 조회 (오픈 대기)', function () {
-    http.get(`${BASE_URL}/api/v1/events`, { tags: { name: 'event_list' } });
+    http.get(`${BASE_URL}/api/v1/events`, params);
     sleep(1);
-    http.get(`${BASE_URL}/api/v1/events/${eventId}`, { tags: { name: 'event_detail' } });
+    http.get(`${BASE_URL}/api/v1/events/${eventId}`, params);
     sleep(1);
-    http.get(`${BASE_URL}/api/v1/events/${eventId}/seats`, { tags: { name: 'seats_browse' } });
+    http.get(`${BASE_URL}/api/v1/events/${eventId}/seats`, params);
     sleep(Math.random() * 2 + 1);  // 1~3초 랜덤 대기 (실제 사용자처럼)
   });
 }
@@ -131,6 +137,9 @@ export function fullTicketFlow(data) {
   const vuHex   = userIdx.toString(16).padStart(12, '0');
   const userId  = `10000000-0000-0000-0000-${vuHex}`;
 
+  // VU별 고유 IP로 Rate Limiter 우회
+  const vuIp = `10.${Math.floor(__VU / 256)}.${__VU % 256}.1`;
+
   let queueToken = null;
 
   // ── 1단계: 대기열 진입 ────────────────────────────────────────────────
@@ -139,7 +148,7 @@ export function fullTicketFlow(data) {
       const res = http.post(
         `${BASE_URL}/api/queue/join`,
         JSON.stringify({ user_id: userId, event_id: eventId }),
-        { headers: { 'Content-Type': 'application/json' } }
+        { headers: { 'Content-Type': 'application/json', 'X-Forwarded-For': vuIp } }
       );
 
       if (res.status === 429) { sleep(1); continue; }
@@ -162,7 +171,7 @@ export function fullTicketFlow(data) {
     while (Date.now() < deadline) {
       const res = http.get(
         `${BASE_URL}/api/queue/status?user_id=${userId}&event_id=${eventId}`,
-        { headers: { 'Authorization': `Bearer ${queueToken}` } }
+        { headers: { 'Authorization': `Bearer ${queueToken}`, 'X-Forwarded-For': vuIp } }
       );
 
       if (res.status !== 200) break;
@@ -174,7 +183,7 @@ export function fullTicketFlow(data) {
       if (body.position === 1) {
         const sseRes = http.get(
           `${BASE_URL}/api/queue/sse?user_id=${userId}&event_id=${eventId}&queue_token=${queueToken}`,
-          { headers: { 'Accept': 'text/event-stream' }, timeout: '10s' }
+          { headers: { 'Accept': 'text/event-stream', 'X-Forwarded-For': vuIp }, timeout: '10s' }
         );
         for (const line of (sseRes.body || '').split('\n')) {
           if (!line.startsWith('data:')) continue;
@@ -194,7 +203,7 @@ export function fullTicketFlow(data) {
 
   if (!accessToken) return;
 
-  const authHeader = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${accessToken}` };
+  const authHeader = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${accessToken}`, 'X-Forwarded-For': vuIp };
   let reservationId = null;
   let reservedPrice = 0;
   const baseIdx = userIdx % seats.length;
