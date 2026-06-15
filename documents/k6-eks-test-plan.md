@@ -982,30 +982,164 @@ curl "http://localhost:9090/api/v1/query" \
 
 ### Phase 7: WebSocket 연결 부하 테스트 (선택 사항)
 
-**목적:** 실시간 좌석 업데이트 레이턴시 확인
+**목적:** 동시 1,000 연결 환경에서 좌석 업데이트 레이턴시 및 HPA 자동 확장 검증
 
-#### 7-1. WebSocket 성능 테스트
+#### 7-0. 이론적 처리량 분석
+
+**포드당 처리 능력:**
+```
+CPU limit: 0.5코어 (Node.js 단일 이벤트 루프 병목)
+→ 포드당 약 2,000 동시 WebSocket 연결 (실험적 기준)
+
+메모리 기준 상한: 512Mi / 50KB per conn ≈ 10,000
+(메모리보다 CPU가 먼저 병목)
+```
+
+**HPA 기준 총 연결 한계:**
+```
+5 pods (min, CPU 75% 미도달)  × 2,000 = 10,000 동시 연결
+10 pods (max, CPU 75% 도달)   × 2,000 = 20,000 동시 연결
+```
+
+**브로드캐스트 처리량 (팬아웃):**
+```
+1 Redis PUBLISH "seat_updates:{eventId}" → 구독 연결 수만큼 socket.emit 발생
+1,000 연결 × 10 seat updates/sec = 10,000 messages/sec 팬아웃
+5,000 연결 × 10 seat updates/sec = 50,000 messages/sec 팬아웃
+```
+
+**k6 테스트 단계별 목표:**
+| Step | 동시 연결 | 목표 | 예상 Pod 수 |
+|------|----------|------|-----------|
+| 1 | 100 VU | 기준선 레이턴시 (< 50ms) | 5 (min) |
+| 2 | 500 VU | HPA 트리거 시작 (CPU 75%) | 5~7 |
+| 3 | 1,000 VU | p(95) < 100ms 검증 | 7~10 |
+
+#### 7-1. ACCESS_TOKEN 발급 (올바른 경로)
+
+**현재 k6-eks-test-plan.md의 잘못된 코드:**
+```bash
+# ❌ /api/v1/auth/login 엔드포인트는 존재하지 않음
+ACCESS_TOKEN=$(curl -s -X POST http://<EKS_LB>/api/v1/auth/login ...)
+```
+
+**올바른 방법 (대기열 → SSE 경로):**
+```bash
+# Step 1: 필요한 정보 준비
+USER_ID="devuser"  # seed.py가 생성한 기본 사용자
+CORE_API_POD=$(kubectl get pod -n ticket-system -l app=core-api -o name | head -1)
+
+# event_id 조회
+EVENT_ID=$(kubectl exec -n ticket-system $CORE_API_POD -- \
+  psql -U user -d booking_system -c \
+  "SELECT event_id FROM events LIMIT 1;" -t | tr -d ' ')
+
+# Step 2: 대기열 진입 (queue_token 획득)
+QUEUE_RESP=$(curl -s -X POST "http://<EKS_LB>/api/queue/join" \
+  -H "Content-Type: application/json" \
+  -d "{\"user_id\":\"$USER_ID\",\"event_id\":\"$EVENT_ID\"}")
+QUEUE_TOKEN=$(echo $QUEUE_RESP | jq -r '.data.queue_token')
+
+# Step 3: SSE에서 access_token 발급
+# devuser가 대기열 앞에 있으면 즉시 발급됨 (position=1)
+ACCESS_TOKEN=$(curl -s -N \
+  "http://<EKS_LB>/api/queue/sse?user_id=$USER_ID&event_id=$EVENT_ID&queue_token=$QUEUE_TOKEN" \
+  -H "Authorization: Bearer $QUEUE_TOKEN" \
+  --max-time 30 | grep -m1 'access_token' | \
+  python3 -c "import sys,json; d=json.loads(sys.stdin.read().split('data:')[1]); print(d['access_token'])")
+
+echo "EVENT_ID: $EVENT_ID"
+echo "ACCESS_TOKEN: $ACCESS_TOKEN"
+```
+
+#### 7-2. 브로드캐스트 부하 생성 (별도 터미널에서 k6 실행 중 병행)
+
+**Redis Pub/Sub으로 seat update 주입 (10회/초):**
+```bash
+REDIS_POD=$(kubectl get pod -n ticket-system -l app=redis -o name | head -1)
+while true; do
+  kubectl exec -n ticket-system $REDIS_POD -- redis-cli PUBLISH \
+    "seat_updates:${EVENT_ID}" \
+    "{\"event_id\":\"${EVENT_ID}\",\"seats\":[{\"seat_id\":\"seat-001\",\"status\":\"held\"},{\"seat_id\":\"seat-002\",\"status\":\"available\"}],\"timestamp\":$(date +%s%3N)}"
+  sleep 0.1  # 10 messages/sec
+done
+```
+
+#### 7-3. k6 WebSocket 부하 테스트 실행
 
 ```bash
-# 테스트 실행 (WebSocket 서비스 대상, 별도 인증 필요)
-# 먼저 access_token 획득 (core-api에서)
-ACCESS_TOKEN=$(curl -s -X POST http://<EKS_LB>/api/v1/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"username":"test_user","password":"..."}' | jq -r '.access_token')
-
 k6 run tests/k6/websocket-load-test.js \
   -e WS_URL="ws://websocket-service.ticket-system.svc.cluster.local:3000" \
   -e HTTP_URL="http://websocket-service.ticket-system.svc.cluster.local:3000" \
-  -e EVENT_ID="<event_id>" \
+  -e EVENT_ID="$EVENT_ID" \
   -e ACCESS_TOKEN="$ACCESS_TOKEN" \
   -o json=phase7-result.json
+
+# 스크립트의 단계별 시간:
+# 0~30s:  0 → 100 VU (ramp up)
+# 30s~90s: 100 → 500 VU
+# 90s~150s: 500 → 1,000 VU (목표 부하)
+# 150s~210s: 1,000 VU 유지 (steady)
+# 210s~240s: 1,000 → 0 VU (ramp down)
+# 총: 240초 (4분)
 ```
 
-**수집 데이터:**
-- k6 메트릭: `seat_update_latency_ms p(95) < 100ms`
-- 연결 성공률: > 95%
+#### 7-4. 모니터링 (병렬 터미널)
 
-**스크린샷 34:** k6 WebSocket 테스트 summary
+**WebSocket 포드 수 + CPU 추적 (5초마다):**
+```bash
+watch -n 5 "echo '=== $(date +%H:%M:%S) ===' && \
+  kubectl get pods -n ticket-system -l app=websocket-service --no-headers | wc -l && \
+  echo '--- CPU/Memory ---' && \
+  kubectl top pods -n ticket-system -l app=websocket-service --no-headers | head -3"
+```
+
+**Grafana에서 확인할 메트릭 (실시간):**
+```
+Prometheus PromQL 쿼리:
+
+1) CPU 사용률 (WebSocket 포드별, 1분 롤링)
+   rate(container_cpu_usage_seconds_total{namespace="ticket-system",pod=~"websocket-service.*"}[1m]) * 100
+
+2) 메모리 사용량 (WebSocket 포드별)
+   container_memory_working_set_bytes{namespace="ticket-system",pod=~"websocket-service.*"}
+
+3) HPA Pod 수 (시간대별)
+   count(kube_pod_status_ready{namespace="ticket-system",pod=~"websocket-service.*",condition="true"})
+```
+
+#### 7-5. 수집 데이터 및 성공 기준
+
+**k6 결과 (phase7-result.json)에서 추출:**
+| 메트릭 | 성공 기준 |
+|--------|---------|
+| `seat_update_latency_ms` p(95) | < 100ms |
+| `ws_connection_success_rate` | > 95% |
+| `ws_connection_errors` | < 50 |
+
+**브로드캐스트 처리량 계산:**
+```bash
+# k6 테스트가 240초이므로
+jq '.metrics.ws_messages_received.values.count / 240' phase7-result.json
+# 결과 = messages/sec (예상 10,000+ 이면 정상)
+```
+
+**HPA 확장 검증:**
+```
+Step 1 (100 VU):  5 pods 유지 (min)
+Step 2 (500 VU):  5~7 pods (CPU 75% 도달 → scaleUp 시작)
+Step 3 (1,000 VU): 7~10 pods (계속 확장)
+```
+
+#### 7-6. 스크린샷 (34~38번)
+
+| # | 타이밍 | 내용 |
+|---|--------|------|
+| 34 | Phase 7 종료 | k6 summary (p95 latency, 연결 성공률, 총 메시지 수) |
+| 35 | Step 3 피크(150~210초) | Grafana WebSocket 포드 CPU/메모리 사용률 |
+| 36 | Step 3 피크 | Grafana WebSocket Pod 수 변화 (HPA 타임라인) |
+| 37 | Phase 7 전체 | Grafana seat_update_latency_ms p(95) 시계열 |
+| 38 | 종료 후 | k6 JSON에서 추출한 브로드캐스트 처리량 (`messages/sec`) |
 
 ---
 
