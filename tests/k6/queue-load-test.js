@@ -5,6 +5,7 @@ import { Counter, Rate, Trend } from 'k6/metrics';
 // ── 환경 변수 ──────────────────────────────────────────────────
 const BASE_URL = __ENV.BASE_URL || 'http://localhost:8000';
 const EVENT_ID = __ENV.EVENT_ID || 'evt-default';
+const FLASH_RATE = parseInt(__ENV.FLASH_RATE || '5000');
 
 // ── 커스텀 메트릭 ──────────────────────────────────────────────
 const queueJoinErrors = new Counter('queue_join_errors');
@@ -23,9 +24,30 @@ const errorRate = new Rate('error_rate');
 //   스모크 테스트 (ramp_up_down만):
 //     k6 run -e SKIP_FLASH=true tests/k6/queue-load-test.js
 //
-//   Flash Crowd 실제 규모 (5000 VU):
-//     k6 run -e FLASH_VUS=5000 tests/k6/queue-load-test.js
-export const options = {
+//   Flash Crowd 2000 req/s:
+//     k6 run -e FLASH_RATE=2000 -e FLASH_VUS=200 tests/k6/queue-load-test.js
+//
+//   Flash Crowd 커스텀 req/s:
+//     k6 run -e FLASH_RATE=3000 -e FLASH_VUS=300 tests/k6/queue-load-test.js
+
+// Flash Crowd 시나리오 (SKIP_FLASH=true면 제외)
+const flashScenario = __ENV.SKIP_FLASH === 'true' ? {} : {
+  flash_crowd: {
+    executor: 'ramping-arrival-rate',
+    startTime: '210s',
+    startRate: 0,
+    timeUnit: '1s',
+    preAllocatedVUs: parseInt(__ENV.FLASH_VUS || '500'),
+    maxVUs: Math.max(FLASH_RATE, parseInt(__ENV.FLASH_VUS || '500')),
+    stages: [
+      { duration: '30s', target: FLASH_RATE },  // 급증
+      { duration: '2m',  target: FLASH_RATE },  // 유지
+      { duration: '30s', target: 0 },           // 감소
+    ],
+  },
+};
+
+const baseOptions = {
   scenarios: {
     // 기본 부하: 점진적으로 늘리고 줄이기 (총 3m30s)
     ramp_up_down: {
@@ -39,23 +61,6 @@ export const options = {
         { duration: '30s', target: 0 },    // 30초 동안 0으로 감소
       ],
     },
-
-    // Flash Crowd: 0 → 5000 req/s 급증 시나리오
-    // ramp_up_down(3m30s=210s) 완료 후 시작
-    // preAllocatedVUs: 로컬=500, 실제 부하=5000 (FLASH_VUS 환경변수로 조정)
-    flash_crowd: {
-      executor: 'ramping-arrival-rate',
-      startTime: '210s',
-      startRate: 0,
-      timeUnit: '1s',
-      preAllocatedVUs: parseInt(__ENV.FLASH_VUS || '500'),
-      maxVUs: 5000,
-      stages: [
-        { duration: '30s', target: 5000 },  // 급증
-        { duration: '2m',  target: 5000 },  // 유지
-        { duration: '30s', target: 0 },     // 감소
-      ],
-    },
   },
   // KPI 임계값: P95 < 300ms, 에러율 < 5%
   thresholds: {
@@ -65,6 +70,13 @@ export const options = {
     'error_rate': ['rate<0.05'],
   },
 };
+
+// Flash Crowd 시나리오 동적 추가
+if (__ENV.SKIP_FLASH !== 'true') {
+  baseOptions.scenarios.flash_crowd = flashScenario.flash_crowd;
+}
+
+export const options = baseOptions;
 
 // ── 공통 헤더 ──────────────────────────────────────────────────
 const headers = { 'Content-Type': 'application/json' };
