@@ -28,7 +28,8 @@ class RateLimiterMiddleware(BaseHTTPMiddleware):
     path = request.url.path
 
     try:
-      client_ip = request.client.host if request.client else "unknown"
+      forwarded_for = request.headers.get("x-forwarded-for")
+      client_ip = forwarded_for.split(",")[0].strip() if forwarded_for else (request.client.host if request.client else "unknown")
       rule = RATE_LIMIT_RULES.get(path)
 
       if rule:

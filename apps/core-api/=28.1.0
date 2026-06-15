@@ -1,0 +1,47 @@
+Defaulting to user installation because normal site-packages is not writeable
+Collecting kubernetes
+  Downloading kubernetes-36.0.2-py2.py3-none-any.whl (4.6 MB)
+     ---------------------------------------- 4.6/4.6 MB 36.9 MB/s eta 0:00:00
+Requirement already satisfied: certifi>=14.05.14 in c:\users\kang\appdata\roaming\python\python311\site-packages (from kubernetes) (2026.2.25)
+Requirement already satisfied: six>=1.9.0 in c:\users\kang\appdata\roaming\python\python311\site-packages (from kubernetes) (1.17.0)
+Requirement already satisfied: python-dateutil>=2.5.3 in c:\users\kang\appdata\roaming\python\python311\site-packages (from kubernetes) (2.9.0.post0)
+Requirement already satisfied: pyyaml>=6.0.3 in c:\users\kang\appdata\roaming\python\python311\site-packages (from kubernetes) (6.0.3)
+Collecting websocket-client!=0.40.0,!=0.41.*,!=0.42.*,>=0.32.0 (from kubernetes)
+  Downloading websocket_client-1.9.0-py3-none-any.whl (82 kB)
+     ---------------------------------------- 82.6/82.6 kB 4.8 MB/s eta 0:00:00
+Requirement already satisfied: requests in c:\users\kang\appdata\roaming\python\python311\site-packages (from kubernetes) (2.33.1)
+Collecting requests-oauthlib (from kubernetes)
+  Downloading requests_oauthlib-2.0.0-py2.py3-none-any.whl (24 kB)
+Requirement already satisfied: urllib3!=2.6.0,>=1.24.2 in c:\users\kang\appdata\roaming\python\python311\site-packages (from kubernetes) (2.6.3)
+Collecting durationpy>=0.7 (from kubernetes)
+  Downloading durationpy-0.10-py3-none-any.whl (3.9 kB)
+Collecting aiohttp<4.0.0,>=3.13.5 (from kubernetes)
+  Downloading aiohttp-3.14.1-cp311-cp311-win_amd64.whl (483 kB)
+     ------------------------------------- 483.4/483.4 kB 29.6 MB/s eta 0:00:00
+Collecting aiohappyeyeballs>=2.5.0 (from aiohttp<4.0.0,>=3.13.5->kubernetes)
+  Downloading aiohappyeyeballs-2.6.2-py3-none-any.whl (15 kB)
+Collecting aiosignal>=1.4.0 (from aiohttp<4.0.0,>=3.13.5->kubernetes)
+  Downloading aiosignal-1.4.0-py3-none-any.whl (7.5 kB)
+Collecting attrs>=17.3.0 (from aiohttp<4.0.0,>=3.13.5->kubernetes)
+  Downloading attrs-26.1.0-py3-none-any.whl (67 kB)
+     ---------------------------------------- 67.5/67.5 kB ? eta 0:00:00
+Collecting frozenlist>=1.1.1 (from aiohttp<4.0.0,>=3.13.5->kubernetes)
+  Downloading frozenlist-1.8.0-cp311-cp311-win_amd64.whl (44 kB)
+     ---------------------------------------- 44.1/44.1 kB ? eta 0:00:00
+Collecting multidict<7.0,>=4.5 (from aiohttp<4.0.0,>=3.13.5->kubernetes)
+  Downloading multidict-6.7.1-cp311-cp311-win_amd64.whl (45 kB)
+     ---------------------------------------- 46.0/46.0 kB 2.2 MB/s eta 0:00:00
+Collecting propcache>=0.2.0 (from aiohttp<4.0.0,>=3.13.5->kubernetes)
+  Downloading propcache-0.5.2-cp311-cp311-win_amd64.whl (42 kB)
+     ---------------------------------------- 42.1/42.1 kB ? eta 0:00:00
+Requirement already satisfied: typing_extensions>=4.4 in c:\users\kang\appdata\roaming\python\python311\site-packages (from aiohttp<4.0.0,>=3.13.5->kubernetes) (4.9.0)
+Collecting yarl<2.0,>=1.17.0 (from aiohttp<4.0.0,>=3.13.5->kubernetes)
+  Downloading yarl-1.24.2-cp311-cp311-win_amd64.whl (92 kB)
+     ---------------------------------------- 92.8/92.8 kB ? eta 0:00:00
+Requirement already satisfied: charset_normalizer<4,>=2 in c:\users\kang\appdata\roaming\python\python311\site-packages (from requests->kubernetes) (3.4.7)
+Requirement already satisfied: idna<4,>=2.5 in c:\users\kang\appdata\roaming\python\python311\site-packages (from requests->kubernetes) (3.11)
+Collecting oauthlib>=3.0.0 (from requests-oauthlib->kubernetes)
+  Downloading oauthlib-3.3.1-py3-none-any.whl (160 kB)
+     ------------------------------------- 160.1/160.1 kB 10.0 MB/s eta 0:00:00
+Installing collected packages: durationpy, websocket-client, propcache, oauthlib, multidict, frozenlist, attrs, aiohappyeyeballs, yarl, requests-oauthlib, aiosignal, aiohttp, kubernetes
+Successfully installed aiohappyeyeballs-2.6.2 aiohttp-3.14.1 aiosignal-1.4.0 attrs-26.1.0 durationpy-0.10 frozenlist-1.8.0 kubernetes-36.0.2 multidict-6.7.1 oauthlib-3.3.1 propcache-0.5.2 requests-oauthlib-2.0.0 websocket-client-1.9.0 yarl-1.24.2
