@@ -1,20 +1,121 @@
 root/
-├── .github/                  # CI/CD 자동화 (GitHub Actions Workflow)
-│   └── workflows/
-├── apps/                     # 애플리케이션 소스 코드 집합
-│   ├── core-api/             # 일반 예매 및 비즈니스 로직 (FastAPI)
+├── .github/                          # CI/CD 자동화 (GitHub Actions)
+│   ├── workflows/
+│   │   ├── ci-core-api.yml           # Core API 빌드/테스트
+│   │   ├── ci-frontend.yml           # Frontend 빌드/테스트
+│   │   ├── ci-infra.yml              # 인프라 검증
+│   │   ├── ci-websocket.yml          # WebSocket 서비스 빌드/테스트
+│   │   ├── deploy-eks.yml            # EKS 배포 파이프라인
+│   │   └── load-test.yml             # k6 부하 테스트 자동화
+│   └── CODEOWNERS
+├── apps/                             # 애플리케이션 소스 코드
+│   ├── core-api/                     # 예매 비즈니스 로직 (FastAPI)
+│   │   ├── alembic/                  # DB 마이그레이션
+│   │   │   └── versions/
+│   │   ├── data/seeds/               # 초기 데이터 (events, venues, sections)
 │   │   ├── src/
+│   │   │   ├── api/v1/               # REST API 라우터
+│   │   │   │   ├── events.py
+│   │   │   │   ├── health.py
+│   │   │   │   ├── payments.py
+│   │   │   │   ├── prediction.py
+│   │   │   │   ├── queue.py
+│   │   │   │   ├── reservations.py
+│   │   │   │   └── seats.py
+│   │   │   ├── auth/                 # JWT 인증
+│   │   │   ├── database/             # DB 연결 및 시드
+│   │   │   ├── exceptions/           # 커스텀 예외
+│   │   │   ├── middleware/           # 에러 핸들러, 로거, 레이트 리미터
+│   │   │   ├── models/               # SQLAlchemy ORM 모델
+│   │   │   ├── prediction/           # LSTM 트래픽 예측 및 리소스 계산
+│   │   │   ├── redis/                # Redis 클라이언트, 락, 큐
+│   │   │   ├── repositories/         # DB 접근 레이어
+│   │   │   ├── schemas/              # Pydantic 스키마
+│   │   │   ├── services/             # 비즈니스 로직 서비스
+│   │   │   ├── utils/                # 상수, 로거
+│   │   │   ├── config.py
+│   │   │   ├── dependencies.py
+│   │   │   ├── main.py
+│   │   │   └── metrics.py            # Prometheus 메트릭
+│   │   ├── tests/
+│   │   │   ├── test_queue.py
+│   │   │   ├── test_reservation.py
+│   │   │   └── test_scaler_service.py
 │   │   ├── Dockerfile
+│   │   ├── alembic.ini
 │   │   └── requirements.txt
-│   └── websocket-service/    # 실시간 좌석 동기화 및 시각화 (Node.js)
+│   ├── frontend/                     # 티켓 예매 UI (React + Vite)
+│   │   ├── src/
+│   │   │   ├── components/
+│   │   │   │   ├── PaymentForm/
+│   │   │   │   ├── QueueStatus/      # 대기열 상태 및 WaitTimeGauge
+│   │   │   │   ├── pages/            # SeatMap, SeatDetailModal, SectionPanel
+│   │   │   │   └── shared/           # Button, Loading, Modal, Toast
+│   │   │   ├── hooks/                # useQueue, useSSE, useSeatSelection, useWebSocket
+│   │   │   ├── pages/                # HomePage, QueuePage, PaymentPage, ConfirmationPage
+│   │   │   ├── services/             # api.js, socket.js, sse.js, storage.js
+│   │   │   ├── styles/               # 전역 스타일 및 컴포넌트별 CSS
+│   │   │   ├── utils/                # constants, formatters, validators
+│   │   │   ├── data/stadium-data.js
+│   │   │   ├── App.jsx
+│   │   │   └── main.jsx
+│   │   ├── src/test/                 # 프론트엔드 단위 테스트
+│   │   ├── Dockerfile
+│   │   ├── index.html
+│   │   ├── package.json
+│   │   └── vite.config.js
+│   └── websocket-service/            # 실시간 좌석 동기화 (Node.js)
 │       ├── src/
+│       │   ├── events/               # connection, seat-events, subscription 핸들러
+│       │   ├── middleware/           # auth, error-handler, logger
+│       │   ├── routes/               # sse-routes (SSE 엔드포인트)
+│       │   ├── services/             # event, redis, seat, socket 서비스
+│       │   ├── utils/                # constants, logger, redis-client
+│       │   ├── config.js
+│       │   ├── index.js
+│       │   ├── metrics.js            # Prometheus 메트릭
+│       │   └── server.js
+│       ├── src/test/
 │       ├── Dockerfile
 │       └── package.json
-├── infra/                    # 인프라 및 쿠버네티스 매니페스트 관리
-│   ├── k8s/                  # 쿠버네티스 리소스 정의
-│   │   ├── base/             # 공통 Deployment, Service, Ingress
-│   │   └── autoscaling/      # Karpenter NodePool, HPA 매니페스트
-│   ├── prometheus/           # Prometheus 및 Custom Metrics 설정 가이드
-│   └── redis/                # Redis Operator 설치 및 설정 파일
-└── tests/                    # 엔드투엔드 및 부하 테스트 코드
-    └── k6/                   # k6 부하 테스트 스크립트 시나리오
+├── infra/                            # 인프라 및 쿠버네티스 매니페스트
+│   ├── eks/                          # EKS 클러스터 프로비저닝
+│   │   ├── cluster.yaml              # eksctl 클러스터 설정
+│   │   ├── ecr-setup.sh
+│   │   ├── karpenter-controller-policy.json
+│   │   ├── karpenter-helm-values.yaml
+│   │   └── setup.sh
+│   ├── k8s/                          # 쿠버네티스 리소스 정의
+│   │   ├── autoscaling/              # HPA, Karpenter NodePool/NodeClass, RBAC
+│   │   ├── base/
+│   │   │   ├── core-api/             # Deployment, Service, RBAC
+│   │   │   ├── frontend/             # Deployment, Service
+│   │   │   ├── monitoring/           # Prometheus, Grafana, kube-state-metrics
+│   │   │   ├── redis-exporter/       # Redis Exporter Deployment
+│   │   │   ├── websocket-service/    # Deployment, Service
+│   │   │   └── shared/               # ConfigMap, Ingress, Postgres, Redis, Secret
+│   │   ├── namespace/
+│   │   └── testing/                  # k6 Job, 테스트 실행 스크립트
+│   └── redis/                        # Redis Operator 설치 및 설정
+├── tests/                            # 부하 테스트 및 검증
+│   ├── benchmark/                    # WebSocket vs SSE 성능 비교
+│   ├── cost-savings/                 # 비용 절감 계산 스크립트
+│   ├── k6/                           # k6 부하 테스트 시나리오
+│   │   ├── ticket-open-scenario.js   # 티켓 오픈 시나리오
+│   │   ├── reservation-stress-test.js
+│   │   ├── queue-load-test.js
+│   │   ├── websocket-load-test.js
+│   │   └── ws-vs-sse-benchmark.js
+│   └── scaling-demo/                 # 오토스케일링 데모 스크립트 및 결과
+├── docs/                             # 기술 문서
+│   ├── api-specs/                    # Core API, WebSocket API 명세
+│   ├── branching-strategy.md
+│   ├── env-variables.md
+│   ├── k8s-migration.md
+│   └── redis-config-guide.md
+├── documents/                        # 팀 협업 문서 (가이드, 일정, 진행상황)
+├── docker-compose.yml                # 로컬 개발 환경 (PostgreSQL, Redis, Prometheus)
+├── docker-compose.api.yml            # Core API 로컬 실행
+├── docker-compose.gateway.yml        # WebSocket Service + Frontend 로컬 실행
+├── .env.example
+└── README.md

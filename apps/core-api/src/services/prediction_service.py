@@ -79,9 +79,9 @@ class PredictionService:
         safety_factor=1.5,
       )
 
-      # 5. 첫 번째 스케일링 윈도우에서 권고값 추출
+      # 5. 피크 윈도우에서 권고값 추출 (windows[0]은 T-3h로 RPS≈0)
       if windows:
-        recommended_replicas = windows[0].recommended_replicas
+        recommended_replicas = max(w.recommended_replicas for w in windows)
         peak_rps = max([p.predicted_rps for p in points], default=0.0)
       else:
         recommended_replicas = 10
