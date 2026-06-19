@@ -44,7 +44,8 @@ export function setup() {
   const eventsRes = http.get(`${BASE_URL}/api/v1/events`);
   if (eventsRes.status !== 200) throw new Error(`이벤트 목록 조회 실패: ${eventsRes.status}`);
 
-  const items = JSON.parse(eventsRes.body).data?.items ?? [];
+  const eventsData = JSON.parse(eventsRes.body);
+  const items = (eventsData && eventsData.data && eventsData.data.items) ? eventsData.data.items : [];
   if (!items.length) throw new Error('이벤트가 없습니다');
 
   const eventId = items[0].event_id;
@@ -52,7 +53,8 @@ export function setup() {
   const seatsRes = http.get(`${BASE_URL}/api/v1/events/${eventId}/seats`);
   if (seatsRes.status !== 200) throw new Error(`좌석 조회 실패: ${seatsRes.status}`);
 
-  const allSeats = JSON.parse(seatsRes.body).data?.items ?? [];
+  const seatsData = JSON.parse(seatsRes.body);
+  const allSeats = (seatsData && seatsData.data && seatsData.data.items) ? seatsData.data.items : [];
   const available = allSeats
     .filter(s => s.status === 'available')
     .slice(0, 100)
@@ -89,12 +91,15 @@ export default function (data) {
       const ok = check(res, {
         '대기열 진입 성공 (200)': (r) => r.status === 200,
         'queue_token 포함':       (r) => {
-          try { return !!JSON.parse(r.body).data?.queue_token; } catch { return false; }
+          try {
+            const body = JSON.parse(r.body);
+            return !!(body && body.data && body.data.queue_token);
+          } catch (e) { return false; }
         },
       });
 
       if (ok) {
-        try { queueToken = JSON.parse(res.body).data.queue_token; } catch { /* ignore */ }
+        try { queueToken = JSON.parse(res.body).data.queue_token; } catch (e) { /* ignore */ }
       }
       break;
     }
@@ -124,9 +129,9 @@ export default function (data) {
       if (res.status !== 200) break;
 
       let body;
-      try { body = JSON.parse(res.body).data; } catch { break; }
+      try { body = JSON.parse(res.body).data; } catch (e) { break; }
 
-      if (!body?.is_in_queue) break;   // 큐에서 제거됨
+      if (!(body && body.is_in_queue)) break;   // 큐에서 제거됨
 
       if (body.position === 1) {
         ready = true;
@@ -159,7 +164,7 @@ export default function (data) {
         try {
           const payload = JSON.parse(line.slice(5).trim());
           if (payload.access_token) { accessToken = payload.access_token; break; }
-        } catch { /* ignore */ }
+        } catch (e) { /* ignore */ }
       }
     }
   });
@@ -191,8 +196,12 @@ export default function (data) {
         reservedPrice = seat.price;
         try {
           const body = JSON.parse(res.body);
-          reservationId = body.data?.reservation_id ?? body.reservation_id;
-        } catch { /* ignore */ }
+          if (body && body.data && body.data.reservation_id) {
+            reservationId = body.data.reservation_id;
+          } else if (body && body.reservation_id) {
+            reservationId = body.reservation_id;
+          }
+        } catch (e) { /* ignore */ }
 
         check(res, {
           '예약 성공':           () => true,
@@ -207,7 +216,10 @@ export default function (data) {
       } else if (res.status === 429) {
         // rate limiter — retry_after만큼 대기 후 재시도 (attempt 소모 안 함)
         let retryAfter = 1;
-        try { retryAfter = JSON.parse(res.body).data?.retry_after || 1; } catch { /* ignore */ }
+        try {
+          const data = JSON.parse(res.body).data;
+          retryAfter = (data && data.retry_after) ? data.retry_after : 1;
+        } catch (e) { /* ignore */ }
         sleep(retryAfter);
         attempt--;  // 이 attempt는 소모하지 않음
 
